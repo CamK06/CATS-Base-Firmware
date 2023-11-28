@@ -6,6 +6,7 @@
 #include "radio.h"
 #include "settings.h"
 #include "shell.h"
+#include "util.h"
 
 int main() {
     // Initialization
@@ -39,6 +40,6 @@ int main() {
         }
         if(usbConnected)
             shell();
-        sleep_ms(1); // TODO: Replace this function with something generic
+        mcuSleep(1);
     }
 }

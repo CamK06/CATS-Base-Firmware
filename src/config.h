@@ -14,6 +14,7 @@
 #define DEVICE_VENDOR "VE3KCN"
 #define DEVICE_NAME "CATS Base Transceiver"
 #define USE_RP2040
+#define USE_SPI
 
 // Indicators
 #define USB_LED_PIN 25 // TEMPORARY. FINAL BOARD IS 8!
