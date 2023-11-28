@@ -8,6 +8,7 @@
 #include "shell.h"
 
 int main() {
+    // Initialization
     settings_load();
     radio_init();
     serial_init(115200);
@@ -38,6 +39,6 @@ int main() {
         }
         if(usbConnected)
             shell();
-        sleep_ms(1);
+        sleep_ms(1); // TODO: Replace this function with something generic
     }
 }
