@@ -15,6 +15,9 @@ typedef struct tnc_settings
 #define SETTINGS_FLASH_ADDR (flash_size() - (flash_sector_size()*sizeof(tnc_settings)))
 #define SETTINGS_BUF_SIZE flash_page_size()*(sizeof(tnc_settings)/flash_page_size())
 
+// Load settings from flash
 void settings_load();
+// Save settings to flash
 void settings_save();
+// Erase all settings from flash
 void settings_erase();

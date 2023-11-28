@@ -25,6 +25,11 @@ char serial_read()
 
 }
 
+int serial_available()
+{
+
+}
+
 int serial_connected()
 {
     

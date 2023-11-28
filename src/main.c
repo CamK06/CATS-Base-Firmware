@@ -1,6 +1,6 @@
-#include <stdio.h>
 #include "version.h"
 #include "config.h"
+
 #include "gpio.h"
 #include "serial.h"
 #include "radio.h"
@@ -18,14 +18,15 @@ int main() {
     gpio_set_mode(USB_LED_PIN, GPIO_OUTPUT);
     gpio_set_mode(RX_LED_PIN, GPIO_OUTPUT);
 
-    // Main Loop (no multithreading here!)
+    // Main Loop
+    // TODO: Use interrupts instead of polling?
     bool usbConnected = false;
     while(true) {
         if(serial_connected() && !usbConnected) {
             usbConnected = true;
-            printf(DEVICE_NAME "\n");
-            printf("Firmware Version: %s\n", VERSION);
-            printf("Build: %s\n", BUILD_STR);
+            serial_write(DEVICE_NAME "\n");
+            serial_write("Firmware Version: " VERSION "\n");
+            serial_write("Build: " BUILD_STR "\n");
             shell_init();
             gpio_write(USB_LED_PIN, usbConnected);
             continue;
