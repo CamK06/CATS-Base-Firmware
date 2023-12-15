@@ -34,9 +34,9 @@ int cspi_available(int port)
     return spi_is_readable(port == 0 ? spi0 : spi1);
 }
 
-int cspi_transfer(int port, uint8_t *data, uint8_t* outData, int len)
+int cspi_transfer(int port, uint8_t *data, int len)
 {
-    return spi_write_read_blocking(port == 0 ? spi0 : spi1, data, outData, len);
+    return spi_write_read_blocking(port == 0 ? spi0 : spi1, data, data, len);
 }
 
 uint8_t cspi_byte(int port, uint8_t data)

@@ -22,7 +22,7 @@ int cspi_read(int port, uint8_t *outData, int len);
 int cspi_available(int port);
 // Send and receive data
 // This function is blocking.
-int cspi_transfer(int port, uint8_t *data, uint8_t *outData, int len);
+int cspi_transfer(int port, uint8_t *data, int len);
 // Send a byte and return the received byte
 uint8_t cspi_byte(int port, uint8_t data);
 #endif
