@@ -462,24 +462,23 @@ int si_set_property(uint16_t property, uint8_t* data, uint8_t len);
 int si_send_command(uint8_t* cmd, int len);
 int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen);
 int si_read_rx_fifo(uint8_t* outData);
-int si_cts();
-int si_cli();
-//int si_sti();
-int si_check();
-void si_enable_tx_int();
-void si_enable_rx_int();
+
 void si_start_rx(int len);
 int si_rx_packet(uint8_t* outData, int len);
 int si_rx_fifo_len();
 int si_tx_fifo_space();
+void si_enable_tx_int();
+void si_enable_rx_int();
+
+int si_cli();
 int si_irq();
-//void si_interrupt_handler(unsigned int gpio, uint32_t evt);
+int si_cts();
+int si_check();
 
 #include "radio_config.h"
 const uint8_t radioConfig[] = RADIO_CONFIGURATION_DATA_ARRAY;
 
 // CATS CONFIG
-// TODO: Clean up or something
 // 9600bd 2FSK
 const uint8_t catsConfig[644] = { 
     0x7, 0x2, 0x1, 0x0, 0x1, 0xC9, 0xC3, 0x80,

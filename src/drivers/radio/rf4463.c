@@ -28,7 +28,6 @@ int radio_init()
     gpio_set_mode(RADIO_CS_PIN, GPIO_OUTPUT);
     gpio_set_mode(RADIO_IRQ_PIN, GPIO_INPUT);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-    //gpio_attach_interrupt(RADIO_IRQ_PIN, GPIO_FALL, si_interrupt_handler);
     cspi_init(1000000, CSPI_PORT0, CSPI_MSB_FIRST);
     cspi_set_pins(RADIO_TX_PIN, RADIO_RX_PIN, RADIO_SCK_PIN, RADIO_CS_PIN);
 
@@ -41,23 +40,14 @@ int radio_init()
     uint8_t buf[32];
     for(int i = 0; i < sizeof(catsConfig); i+= len+1) {
         len = catsConfig[i];
-        if(i == 0) // Skip the initial powerup command
-            continue;
         memcpy(buf, &catsConfig[i+1], len);
-        si_cts();
-        // Send the command
-        gpio_write(RADIO_CS_PIN, GPIO_LOW);
-        cspi_transfer(CSPI_PORT0, buf, len);
-        gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+        si_send_command(buf, len);
     }
-    si_cli();
-
     if(si_check() != 1)
         return 0;
-
-    //si_sti();
+    si_cli();
     radio_sleep();
-    mcu_sleep(100);
+    mcu_sleep(250);
     return 1;
 }
 
@@ -71,7 +61,6 @@ int radio_tx(uint8_t* data, int len)
     if(int_radio_state == RADIO_STATE_RX)
         radio_sleep();
     si_send_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x01 | 0x02}, 2);
-    //si_cli(); // Probably not needed- test this.
 
     // Start the transmission
     int fifo_space = 0;
@@ -106,51 +95,31 @@ int radio_tx(uint8_t* data, int len)
     }
     
     // Cleanup
+    // CLI and sleep may be harmful as the radio should already sleep on its own after TX...
     si_cli();
-    radio_sleep(); // This is probably redundant, radio *should* sleep on its own. TEST THIS.
+    radio_sleep();
     int_radio_state = RADIO_STATE_IDLE;
     gpio_write(TX_LED_PIN, GPIO_LOW);
     return 0;
 }
 
-int si_rx_packet(uint8_t* outData, int len)
+void radio_poweron()
 {
-    // Receive the packet
-    si_start_rx(len);
-    while(!si_irq())
-        mcu_sleep(10);
-    int rx = si_read_rx_fifo(outData);
-    
-    // Cleanup
-    si_cli();
-    radio_sleep();
-    int_radio_state = RADIO_STATE_IDLE;
-    return rx;
+    // Reset the radio
+    gpio_write(RADIO_SDN_PIN, GPIO_HIGH);
+    mcu_sleep(100);
+    gpio_write(RADIO_SDN_PIN, GPIO_LOW);
+    mcu_sleep(50);
 }
 
-void si_start_rx(int len)
+void radio_sleep()
 {
-    si_send_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x01 | 0x02}, 2);
-    si_enable_rx_int();
-    si_cli();
-    int_radio_state = RADIO_STATE_RX;
-    si_send_command((uint8_t[]){RF4463_CMD_START_RX, radio_channel, 0, len >> 8, len & 0xff, 0x10, 0x10, 0x10}, 8); // TODO: Look into what 0x10 should be- appears to be state to enter after RX? Currently sleep.
+    si_send_command((uint8_t[]){RF4463_CMD_CHANGE_STATE, 0x01}, 2);
 }
 
-int si_rx_fifo_len()
+void radio_set_channel(int channel)
 {
-    uint8_t fifo[4];
-    if(si_read_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x00}, 2, fifo, 4) <= 0)
-        return 0;
-    return fifo[1];
-}
-
-int si_tx_fifo_space()
-{
-    uint8_t fifo[4];
-    if(si_read_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x00}, 2, fifo, 4) <= 0)
-        return 0;
-    return fifo[2];
+    radio_channel = channel;
 }
 
 void radio_set_rx_callback(radio_rx_cb_t cb)
@@ -163,25 +132,6 @@ radio_state_t radio_get_state()
     return int_radio_state;
 }
 
-int si_read_rx_fifo(uint8_t* outData)
-{
-    if(!si_cts())
-        return 0;
-    
-    int read = si_rx_fifo_len();
-    read = si_read_command((uint8_t[]){RF4463_CMD_RX_FIFO_READ}, 1, outData, read); // TODO: Remove 0xff at index 0 of read data
-    return read;
-}
-
-/*
-void si_interrupt_handler(unsigned int gpio, uint32_t evt)
-{
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    si_send_command(RF4463_CMD_GET_INT_STATUS, (uint8_t[]){0x00, 0x00, 0x00}, 0);
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-    gpio_acknowledge_irq(gpio, evt);
-}
-*/
 int si_set_property(uint16_t property, uint8_t* data, uint8_t len)
 {
     if(!si_cts())
@@ -211,7 +161,6 @@ int si_send_command(uint8_t* cmd, int len)
 
     // Send the command
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    //cspi_byte(CSPI_PORT0, cmd);
     cspi_transfer(CSPI_PORT0, buf, len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
@@ -232,8 +181,6 @@ int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen)
 
     // Send the command to read
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    //cspi_byte(CSPI_PORT0, cmd);
-    //if(len > 0 && data != NULL)
     cspi_transfer(CSPI_PORT0, buf, len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     
@@ -246,6 +193,78 @@ int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen)
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
     return read;
+}
+
+int si_read_rx_fifo(uint8_t* outData)
+{
+    if(!si_cts())
+        return 0;
+    
+    int read = si_rx_fifo_len();
+    read = si_read_command((uint8_t[]){RF4463_CMD_RX_FIFO_READ}, 1, outData, read); // TODO: Remove 0xff CTS at index 0 of read data
+    return read;
+}
+
+void si_start_rx(int len)
+{
+    si_send_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x01 | 0x02}, 2);
+    si_enable_rx_int();
+    si_cli();
+    int_radio_state = RADIO_STATE_RX;
+    si_send_command((uint8_t[]){RF4463_CMD_START_RX, radio_channel, 0, len >> 8, len & 0xff, 0x10, 0x10, 0x10}, 8); // TODO: Look into what 0x10 should be- appears to be state to enter after RX? Currently sleep.
+}
+
+int si_rx_packet(uint8_t* outData, int len)
+{
+    // Receive the packet
+    si_start_rx(len);
+    while(!si_irq())
+        mcu_sleep(10);
+    int rx = si_read_rx_fifo(outData);
+    
+    // Cleanup
+    si_cli();
+    radio_sleep();
+    int_radio_state = RADIO_STATE_IDLE;
+    return rx;
+}
+
+int si_rx_fifo_len()
+{
+    uint8_t fifo[4];
+    if(si_read_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x00}, 2, fifo, 4) <= 0)
+        return 0;
+    return fifo[1];
+}
+
+int si_tx_fifo_space()
+{
+    uint8_t fifo[4];
+    if(si_read_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x00}, 2, fifo, 4) <= 0)
+        return 0;
+    return fifo[2];
+}
+
+void si_enable_tx_int()
+{
+    si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x01, 0x20, 0x00}, 3);
+}
+
+void si_enable_rx_int()
+{
+    si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x03, 0x18, 0x00}, 3);
+}
+
+int si_cli()
+{
+    gpio_write(RADIO_CS_PIN, GPIO_LOW);
+    si_send_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0x00, 0x00, 0x00}, 1);
+    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+}
+
+int si_irq()
+{
+    return !gpio_read(RADIO_IRQ_PIN); // Inverse for active low pin
 }
 
 int si_cts()
@@ -263,40 +282,6 @@ int si_cts()
     return 0;
 }
 
-int si_cli()
-{
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    si_send_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0x00, 0x00, 0x00}, 1);
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-}
-
-void si_enable_tx_int()
-{
-    si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x01, 0x20, 0x00}, 3);
-}
-
-void si_enable_rx_int()
-{
-    si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x03, 0x18, 0x00}, 3);
-}
-
-int si_irq()
-{
-    return !gpio_read(RADIO_IRQ_PIN); // Inverse for active low pin
-}
-
-// TODO: DO NOT TURN ON *ALL* INTERRUPTS!
-/*
-int si_sti()
-{
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0xff, 1, 1}, 1); // PACKET_RX interrupt
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    si_set_property(RF4463_PROPERTY_INT_CTL_PH_ENABLE, (uint8_t[]){0xff, 1, 1}, 1); // PACKET_RX interrupt
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-}
-*/
 int si_check()
 {
     uint8_t buf[9];
@@ -307,29 +292,6 @@ int si_check()
     if(partInfo != 0x4463)
         return 0;
     return 1;
-}
-
-void radio_poweron()
-{
-    // Reset the radio
-    gpio_write(RADIO_SDN_PIN, GPIO_HIGH);
-    mcu_sleep(100);
-    gpio_write(RADIO_SDN_PIN, GPIO_LOW);
-    mcu_sleep(50);
-    gpio_write(RADIO_SDN_PIN, GPIO_HIGH);
-    cspi_byte(CSPI_PORT0, RF4463_CMD_POWER_UP);
-    gpio_write(RADIO_SDN_PIN, GPIO_LOW);
-    mcu_sleep(250);
-}
-
-void radio_sleep()
-{
-    si_send_command((uint8_t[]){RF4463_CMD_CHANGE_STATE, 0x01}, 2);
-}
-
-void radio_set_channel(int channel)
-{
-    radio_channel = channel;
 }
 
 #endif
