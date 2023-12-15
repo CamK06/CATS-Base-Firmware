@@ -1,4 +1,4 @@
 #pragma once
 
 // Sleep for the specified number of milliseconds
-void mcuSleep(int ms);
+void mcu_sleep(int ms);

@@ -44,7 +44,7 @@ target_include_directories(catsbase PUBLIC src src/drivers/common)
 
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME} 
-    PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi
+    PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi hardware_gpio
 )
 
 # Enable usb output, disable uart output

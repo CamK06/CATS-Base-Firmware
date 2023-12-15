@@ -23,4 +23,14 @@ void gpio_write(int pin, int state)
     gpio_put(pin, state);
 }
 
+void gpio_attach_interrupt(int pin, int mode, gpio_irq_cb_t cb)
+{
+    gpio_set_irq_enabled_with_callback(pin, mode, true, cb);
+}
+
+void gpio_detach_interrupt(int pin)
+{
+    gpio_set_irq_enabled(pin, GPIO_IRQ_EDGE_FALL | GPIO_IRQ_EDGE_RISE, false);
+}
+
 #endif

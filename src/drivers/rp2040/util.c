@@ -3,7 +3,7 @@
 #include "pico/stdlib.h"
 #include "util.h"
 
-void mcuSleep(int ms)
+void mcu_sleep(int ms)
 {
     sleep_ms(ms);
 }

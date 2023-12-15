@@ -12,6 +12,8 @@ typedef struct tnc_settings
     bool shell_echo;
 } tnc_settings;
 
+extern tnc_settings settings;
+
 #define SETTINGS_FLASH_ADDR (flash_size() - (flash_sector_size()*sizeof(tnc_settings)))
 #define SETTINGS_BUF_SIZE flash_page_size()*(sizeof(tnc_settings)/flash_page_size())
 
