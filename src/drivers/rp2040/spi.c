@@ -42,7 +42,7 @@ int cspi_transfer(int port, uint8_t *data, int len)
 uint8_t cspi_byte(int port, uint8_t data)
 {
     uint8_t read;
-    return spi_write_read_blocking(port == 0 ? spi0 : spi1, &data, &read, 1);
+    spi_write_read_blocking(port == 0 ? spi0 : spi1, &data, &read, 1);
     return read;
 }
 
