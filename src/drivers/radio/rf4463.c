@@ -39,11 +39,11 @@ int radio_init()
     int len;
     uint8_t cmd;
     uint8_t buf[32];
-    for(int i = 0; i < sizeof(radioConfig); i+= len+1) {
-        len = radioConfig[i];
+    for(int i = 0; i < sizeof(catsConfig); i+= len+1) {
+        len = catsConfig[i];
         if(i == 0)
             continue;
-        memcpy(buf, radioConfig+i+1, len);
+        memcpy(buf, catsConfig+i+1, len);
         si_send_command(buf, len);
     }
     si_cli();
@@ -80,11 +80,6 @@ int radio_tx(uint8_t* data, int len)
     // TODO: Add a timeout(?)
     int tx = chunk_len;
     while(int_radio_state == RADIO_STATE_TX) {
-        // if(si_irq()) {
-        //     si_cli();
-        //     break;
-        // }
-
         fifo_space = si_tx_fifo_space();
         if(fifo_space <= 0)
             continue;
@@ -109,9 +104,6 @@ int radio_tx(uint8_t* data, int len)
     }
     
     // Cleanup
-    // CLI and sleep may be harmful as the radio should already sleep on its own after TX...
-    //si_cli();
-    //radio_sleep();
     int_radio_state = RADIO_STATE_IDLE;
     gpio_write(TX_LED_PIN, GPIO_LOW);
     return 0;
