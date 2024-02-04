@@ -1,6 +1,6 @@
 #include "settings.h"
-#include "flash.h"
-#include "serial.h"
+#include "drivers/flash.h"
+#include "drivers/serial.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -3,7 +3,8 @@
 #include "commands.h"
 #include "version.h"
 #include "config.h"
-#include "util.h"
+#include "drivers/mcu.h"
+#include "drivers/radio.h"
 
 #include <stdio.h>
 #include <string.h>

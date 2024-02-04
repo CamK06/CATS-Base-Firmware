@@ -12,8 +12,6 @@ typedef enum radio_state {
 
 // Initialize the radio. Returns 0 if initialization succeeded, -1 if failed
 int radio_init();
-// Set the callback function to be called when a packet is received
-void radio_set_rx_callback(radio_rx_cb_t cb);
 // Transmit a packet. Returns 0 if the command was successfully sent, -1 if failed, *NOT* if the transmission itself succeeded or failed
 int radio_tx(uint8_t* data, int len);
 // Enable the radio

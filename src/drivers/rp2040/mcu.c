@@ -4,7 +4,7 @@
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
 
-#include "util.h"
+#include "drivers/mcu.h"
 
 void mcu_sleep(int ms)
 {

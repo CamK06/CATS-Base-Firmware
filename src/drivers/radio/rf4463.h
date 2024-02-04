@@ -458,6 +458,18 @@
 #define RF4463_PA_MODE_CLASS_E                           0x00
 #define RF4463_PA_MODE_SWITCH_CURRENT                    0x01
 
+typedef enum state {
+    RF4463_STATE_NO,
+    RF4463_STATE_SLEEP,
+    RF4463_STATE_SPI_ACTIVE,
+    RF4463_STATE_READY,
+    RF4463_STATE_READY2,
+    RF4463_STATE_TUNE_TX,
+    RF4463_STATE_TUNE_RX,
+    RF4463_STATE_TX,
+    RF4463_STATE_RX
+} rf4463_state_t;
+
 int si_set_property(uint16_t property, uint8_t* data, uint8_t len);
 int si_send_command(uint8_t* cmd, int len);
 int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen);

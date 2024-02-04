@@ -1,6 +1,6 @@
 #include "config.h"
 #ifdef USE_RP2040
-#include "flash.h"
+#include "drivers/flash.h"
 #include "pico/stdlib.h"
 #include "hardware/flash.h"
 #include "hardware/sync.h"

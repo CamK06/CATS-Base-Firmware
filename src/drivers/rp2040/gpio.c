@@ -1,7 +1,7 @@
 #include "config.h"
 #ifdef USE_RP2040
 #include "pico/stdlib.h"
-#include "gpio.h"
+#include "drivers/gpio.h"
 
 void gpio_setup(int pin)
 {

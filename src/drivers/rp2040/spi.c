@@ -2,7 +2,7 @@
 #if defined(USE_RP2040) && defined(USE_SPI)
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
-#include "spi.h"
+#include "drivers/spi.h"
 
 void cspi_init(int baudRate, int port, int bitOrder)
 {

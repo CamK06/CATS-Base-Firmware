@@ -1,12 +1,12 @@
+#include "shell.h"
 #include "config.h"
 #include "version.h"
-
-#include "gpio.h"
-#include "util.h"
-#include "radio.h"
-#include "shell.h"
-#include "serial.h"
 #include "settings.h"
+
+#include "drivers/serial.h"
+#include "drivers/radio.h"
+#include "drivers/gpio.h"
+#include "drivers/mcu.h"
 
 #include <pico.h>
 #include <pico/bootrom.h>
@@ -20,7 +20,7 @@ int main() {
     // Initialization
     serial_init(115200);
     radio_set_channel(20); // 430.5MHz with current config   TODO: Make this generic so it works with any radio as channels may differ
-    settings_load();
+    //settings_load();
     radio_init();
 
     // GPIO Setup

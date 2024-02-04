@@ -2,7 +2,7 @@
 #ifdef USE_RP2040
 #include "pico/stdlib.h"
 #include "tusb.h"
-#include "serial.h"
+#include "drivers/serial.h"
 
 int serial_init(int baudRate)
 {

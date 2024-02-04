@@ -1,4 +1,5 @@
 #pragma once
+
 // General
 //#define ENABLE_UART
 #define VERBOSE_OUTPUT
@@ -13,13 +14,23 @@
 #ifdef KCN_RP2040_BASE
 
 #define DEVICE_VENDOR "VE3KCN"
-#define DEVICE_NAME "CATS Base Transceiver"
+#ifndef KCN_RP2040_REV1
+#define DEVICE_NAME "CATS Base Transceiver R2"
+
+#else
+#define DEVICE_NAME "CATS Base Transceiver R1"
+#endif
 #define USE_RP2040
 #define USE_SPI
 
 // Indicators
-//#define USB_LED_PIN 25 // TEMPORARY. FINAL BOARD IS 8!
+#ifdef KCN_RP2040_REV1
+#define USB_LED_PIN 25 // TEMPORARY. FINAL BOARD IS 8!
+
+#else
+
 #define USB_LED_PIN 8
+#endif
 #define TX_LED_PIN 9
 #define RX_LED_PIN 10
 

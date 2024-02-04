@@ -1,5 +1,5 @@
 #include "shell.h"
-#include "serial.h"
+#include "drivers/serial.h"
 #include "commands.h"
 
 #include <string.h>
