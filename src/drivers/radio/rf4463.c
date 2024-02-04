@@ -39,11 +39,11 @@ int radio_init()
     int len;
     uint8_t cmd;
     uint8_t buf[32];
-    for(int i = 0; i < sizeof(radioConfig); i+= len+1) {
-        len = radioConfig[i];
+    for(int i = 0; i < sizeof(catsConfig); i+= len+1) {
+        len = catsConfig[i];
         if(i == 0)
             continue;
-        memcpy(buf, radioConfig+i+1, len);
+        memcpy(buf, catsConfig+i+1, len);
         si_send_command(buf, len);
     }
     if(si_check() != 1)
@@ -56,58 +56,72 @@ int radio_init()
 
 int radio_tx(uint8_t* data, int len)
 {
-    uint8_t buf[len+1];
-    memcpy(buf+1, data, len);
-    buf[0] = RF4463_CMD_TX_FIFO_WRITE;
-
     // Setup; bring the radio back to an idle state
     if(int_radio_state == RADIO_STATE_RX)
         radio_sleep();
     si_send_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x01 | 0x02}, 2);
+    si_send_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0, 0, 0xFF}, 4);
+    si_cli();
 
     // Start the transmission
-    int fifo_space = si_tx_fifo_space();
-    int chunk_len = len < fifo_space ? len : fifo_space;
-    si_send_command(buf, chunk_len+1);
-    //si_enable_tx_int();
-    //si_cli();
-    si_send_command((uint8_t[]){RF4463_CMD_START_TX, radio_channel, 0x10, len >> 8, len & 0xFF, 0, 0}, 7);
-    int_radio_state = RADIO_STATE_TX;
+    int fifo_space = 64;
+    int chunk_len = (len < fifo_space) ? len : fifo_space;
+    printf("INITIAL LEN %d", chunk_len);
+    uint8_t txBuf[64];
+    memcpy(txBuf, data, chunk_len);
+
+    gpio_write(RADIO_CS_PIN, GPIO_LOW);
+    cspi_byte(CSPI_PORT0, RF4463_CMD_TX_FIFO_WRITE);
+    cspi_transfer(CSPI_PORT0, txBuf, chunk_len);
+    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+    
     gpio_write(TX_LED_PIN, GPIO_HIGH);
+    si_send_command((uint8_t[]){RF4463_CMD_START_TX, radio_channel, 0x10, len >> 8, len & 0xFF, 0, 0}, 7);
+
+    int_radio_state = RADIO_STATE_TX;
 
     // Step through the buffer until TX is finished
     // TODO: Add a timeout(?)
     int tx = chunk_len;
     while(int_radio_state == RADIO_STATE_TX) {
-        // No interrupt, wait then check again
         if(si_irq()) {
-            //si_cli();
-            serial_write("IRQ");
+            si_cli();
             break;
         }
-        
+
         fifo_space = si_tx_fifo_space();
         if(fifo_space <= 0)
             continue;
 
-        chunk_len = (len - tx) > fifo_space ? fifo_space : len - tx;
-        printf("LEN: %d\nFIFO: %d", chunk_len, fifo_space);
+        chunk_len = ((len - tx) < fifo_space) ? (len - tx) : fifo_space;
+        printf("LEN: %d  FIFO: %d  LEN-TX:%d\n", chunk_len, fifo_space, len-tx);
         if(chunk_len <= 0) {
             mcu_sleep(16);
+            continue;
+        }
+        memcpy(txBuf, data+tx, chunk_len);
+
+        if(si_fifo_underflow_pending()) {
+            printf("FIFO UNDERFLOW\n");
             break;
         }
 
         // Send the next chunk
-        buf[tx-1] = RF4463_CMD_TX_FIFO_WRITE;
-        si_send_command(buf+tx-1, chunk_len+1);
+        gpio_write(RADIO_CS_PIN, GPIO_LOW);
+        cspi_byte(CSPI_PORT0, RF4463_CMD_TX_FIFO_WRITE);
+        cspi_transfer(CSPI_PORT0, txBuf, chunk_len);
+        gpio_write(RADIO_CS_PIN, GPIO_HIGH);
         tx += chunk_len;
         mcu_sleep(16);
+
+        if(si_packet_sent_pending())
+            break;
     }
     
     // Cleanup
     // CLI and sleep may be harmful as the radio should already sleep on its own after TX...
-    si_cli();
-    radio_sleep();
+    //si_cli();
+    //radio_sleep();
     int_radio_state = RADIO_STATE_IDLE;
     gpio_write(TX_LED_PIN, GPIO_LOW);
     return 0;
@@ -260,6 +274,27 @@ int si_tx_fifo_space()
     return fifo[2];
 }
 
+int si_packet_sent_pending()
+{
+    uint8_t outData[4];
+    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 5), 0xFF, 0xFF}, 4, outData, 4);
+    return (outData[3] & (1 << 5)) != 0;
+}
+
+int si_packet_rx_pending()
+{
+    uint8_t outData[4];
+    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 4), 0xFF, 0xFF}, 4, outData, 4);
+    return (outData[2] & (1 << 4)) != 0;
+}
+
+int si_fifo_underflow_pending()
+{
+    uint8_t outData[8];
+    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF, 0xFF, 0xFF ^ (1 << 5)}, 4, outData, 7);
+    return (outData[7] & (1 << 5)) != 0;
+}
+
 void si_enable_tx_int()
 {
     si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x01, 0x20, 0x00}, 3);
@@ -285,7 +320,6 @@ int si_irq()
 int si_cts()
 {
     int timeout = RF4463_CTS_TIMEOUT;
-    serial_write("Checking CTS...\n");
     //while(gpio_read(RADIO_GP1_PIN) == 0)
     //    mcu_sleep(1);
     //serial_write("CTS OK\n");
@@ -295,7 +329,6 @@ int si_cts()
         uint8_t read = cspi_byte(CSPI_PORT0, 0x00);
         if(read == 0xff) {
             gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-            serial_write("Clear\n");
             return 1;
         }
         gpio_write(RADIO_CS_PIN, GPIO_HIGH);

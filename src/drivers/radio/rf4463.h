@@ -467,6 +467,9 @@ void si_start_rx(int len);
 int si_rx_packet(uint8_t* outData, int len);
 int si_rx_fifo_len();
 int si_tx_fifo_space();
+int si_packet_sent_pending();
+int si_packet_rx_pending();
+int si_fifo_underflow_pending();
 void si_enable_tx_int();
 void si_enable_rx_int();
 
