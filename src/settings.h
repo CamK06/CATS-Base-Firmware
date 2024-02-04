@@ -29,8 +29,6 @@ cats_env_var_t** get_all_vars();
 void settings_load();
 // Save settings to flash
 void settings_save();
-// Erase all settings from flash
-void settings_erase();
 
 
 #define SETTINGS_BUF_SIZE (sizeof(cats_env_var_t)*varCount)

@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "flash.h"
+#include "serial.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -125,18 +126,73 @@ char* var_to_str(cats_env_var_t* var)
     return out;
 }
 
+uint16_t crc16(uint8_t* data, int len)
+{
+	uint16_t crc = 0xFFFF;
+	for(int i = 0; i < len; i++) {
+		crc ^= data[i];
+		for(uint8_t j = 0; j < 8; j++)
+			crc = (crc & 1) != 0 ? (crc >> 1) ^ 0x8408 : crc >> 1;
+	}
+	return ~crc;
+}
+
 void settings_load()
 {
-    flash_read(SETTINGS_BUF_SIZE, (char*)env_vars);
+    char buf[sizeof(env_vars)+(2*sizeof(uint16_t))];
+    uint16_t len, crc;
+   
+    flash_read(sizeof(uint16_t), (char*)&len);
+    flash_read(len+sizeof(uint16_t), buf);
+    memcpy(&crc, buf+len, sizeof(uint16_t));
+
+    if(crc != crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t))) {
+        printf("%x != %x\n", crc, crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t)));
+        serial_write("Settings CRC checksum is invalid!\n");
+        serial_write("Settings will be reset!\n");
+        return;
+    }
+
+    int var = 0;
+    for(int i = sizeof(uint16_t); i-sizeof(uint16_t) < len; i++) {
+        var = buf[i];
+        memset(env_vars[var].val, 0x00, 255);
+        memcpy(env_vars[var].val, &buf[i+2], buf[i+1]);
+        i += buf[i+1]+1;
+        if(len-i <= 3)
+            break;
+    }
 }
 
 void settings_save()
 {
-    settings_erase();
-    flash_write(SETTINGS_BUF_SIZE, (char*)env_vars);
-}
+    char buf[sizeof(env_vars)];
+    uint16_t idx = sizeof(uint16_t);
+    for(int i = 0; i < varCount; i++) {
+        buf[idx++] = (uint8_t)i;    // Variable index
+        switch(env_vars[i].type) {  // Variable length
+            case CATS_BOOL:
+            case CATS_UINT8:
+                buf[idx++] = 1;
+            break;
+            case CATS_UINT16:
+                buf[idx++] = 2;
+            break;
+            case CATS_UINT32:
+                buf[idx++] = 4;
+            break;
+            case CATS_STRING:
+                buf[idx++] = strlen(env_vars[i].val)+1; // Shouldn't exceed 255, CHANGE THIS IF VALUES ARE ALLOWED >255
+            break;
+        }
+        memcpy(&buf[idx], env_vars[i].val, buf[idx-1]); // Variable data
+        idx += buf[idx-1];
+    }
+    uint16_t crc = crc16(buf+sizeof(uint16_t), idx-sizeof(uint16_t));
+    memcpy(buf, &idx, sizeof(uint16_t));    // Memory size
+    memcpy(buf+idx, &crc, sizeof(uint16_t));    // CRC
+    idx += sizeof(uint16_t);
 
-void settings_erase()
-{
-    flash_erase(SETTINGS_BUF_SIZE);
+    flash_erase(idx);
+    flash_write(idx, buf);
 }

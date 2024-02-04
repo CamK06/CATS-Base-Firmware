@@ -18,7 +18,6 @@
 
 int main() {
     // Initialization
-    settings_load();
     serial_init(115200);
     radio_init();
     radio_set_channel(20); // 430.5MHz with current config   TODO: Make this generic so it works with any radio as channels may differ
@@ -41,6 +40,7 @@ int main() {
             serial_write("Firmware Version: " VERSION "\n");
             serial_write("Build: " BUILD_STR "\n");
             gpio_write(USB_LED_PIN, usbConnected);
+            settings_load();
             serial_putchar('>');
             continue;
         } else if(!serial_connected() && usbConnected) {
