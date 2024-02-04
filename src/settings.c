@@ -17,16 +17,6 @@ cats_env_var_t env_vars[] = {
         "TX\0",
         { 0 },
         CATS_BOOL
-    },
-    {
-        "INT16\0",
-        { 0 },
-        CATS_UINT16
-    },
-    {
-        "INT32\0",
-        { 0 },
-        CATS_UINT32
     }
 };
 int varCount = sizeof(env_vars)/sizeof(cats_env_var_t);
@@ -156,6 +146,10 @@ void settings_load()
     int var = 0;
     for(int i = sizeof(uint16_t); i-sizeof(uint16_t) < len; i++) {
         var = buf[i];
+        if(var >= varCount) {
+            serial_write("Tried to read non-existent variable!\n");
+            return;
+        }
         memset(env_vars[var].val, 0x00, 255);
         memcpy(env_vars[var].val, &buf[i+2], buf[i+1]);
         i += buf[i+1]+1;

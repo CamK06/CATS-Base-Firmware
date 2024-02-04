@@ -30,7 +30,4 @@ void settings_load();
 // Save settings to flash
 void settings_save();
 
-
-#define SETTINGS_BUF_SIZE (sizeof(cats_env_var_t)*varCount)
-
 #endif
