@@ -1,19 +1,20 @@
 #include "config.h"
+#include "rf4463.h"
+
 #ifdef USE_RF4463
 #ifndef USE_SPI
 #error "RF4463 requires SPI"
 #endif
-#include "drivers/radio.h"
-#include "rf4463.h"
-#include "drivers/spi.h"
-#include "drivers/gpio.h"
-#include "drivers/mcu.h"
-#include <string.h>
-#include <stdio.h>
+
 #include "drivers/serial.h"
+#include "drivers/radio.h"
+#include "drivers/gpio.h"
+#include "drivers/spi.h"
+#include "drivers/mcu.h"
 
 #include <stdlib.h>
-#include "pico/stdlib.h"
+#include <string.h>
+#include <stdio.h>
 
 radio_state_t int_radio_state = RADIO_STATE_IDLE;
 radio_rx_cb_t rx_Callback;
@@ -150,6 +151,8 @@ radio_state_t radio_get_state()
     return int_radio_state;
 }
 
+// Internal functions
+
 int si_set_property(uint16_t property, uint8_t* data, uint8_t len)
 {
     if(!si_cts())
@@ -163,7 +166,7 @@ int si_set_property(uint16_t property, uint8_t* data, uint8_t len)
     buf[3] = property && 0xFF;
 
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    cspi_transfer(CSPI_PORT0, buf, len+4);
+    cspi_transfer(CSPI_PORT0, buf, len+4); // cspi_write?
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
     return 1;
@@ -214,12 +217,12 @@ int si_read_rx_fifo(uint8_t* outData)
 {
     int read = si_rx_fifo_len()-2;
     memset(outData, 0x00, read);
+    
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
     cspi_byte(CSPI_PORT0, RF4463_CMD_RX_FIFO_READ);
     cspi_transfer(CSPI_PORT0, outData, read);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     
-    //read = si_read_command((uint8_t[]){RF4463_CMD_RX_FIFO_READ}, 1, outData, read); // TODO: Remove 0xff CTS at index 0 of read data
     return read;
 }
 
@@ -307,9 +310,6 @@ int si_irq()
 int si_cts()
 {
     int timeout = RF4463_CTS_TIMEOUT;
-    //while(gpio_read(RADIO_GP1_PIN) == 0)
-    //    mcu_sleep(1);
-    //serial_write("CTS OK\n");
     while(1) {
         gpio_write(RADIO_CS_PIN, GPIO_LOW);
         cspi_byte(CSPI_PORT0, RF4463_CMD_READ_BUF);
@@ -319,9 +319,7 @@ int si_cts()
             return 1;
         }
         gpio_write(RADIO_CS_PIN, GPIO_HIGH);
-        //mcu_sleep(20);
     }
-    //mcu_sleep(50);
     return 1;
 }
 
