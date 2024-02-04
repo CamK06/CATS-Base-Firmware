@@ -19,8 +19,8 @@
 int main() {
     // Initialization
     serial_init(115200);
-    radio_init();
     radio_set_channel(20); // 430.5MHz with current config   TODO: Make this generic so it works with any radio as channels may differ
+    settings_load();
 
     // GPIO Setup
     gpio_setup(USB_LED_PIN);
@@ -40,7 +40,19 @@ int main() {
             serial_write("Firmware Version: " VERSION "\n");
             serial_write("Build: " BUILD_STR "\n");
             gpio_write(USB_LED_PIN, usbConnected);
-            settings_load();
+
+            int r = radio_init();
+            if(r != 1)
+                serial_write("Something's fucked\n");
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            radio_tx("Hello world!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1!!!!!!!!!!!!!!!!!!", 128);
+            while(!serial_available());
+            return -1;
+
             serial_putchar('>');
             continue;
         } else if(!serial_connected() && usbConnected) {

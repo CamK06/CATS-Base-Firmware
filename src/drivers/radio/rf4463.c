@@ -39,18 +39,15 @@ int radio_init()
     int len;
     uint8_t cmd;
     uint8_t buf[32];
-    for(int i = 0; i < sizeof(catsConfig); i+= len+1) {
-        len = catsConfig[i];
+    for(int i = 0; i < sizeof(radioConfig); i+= len+1) {
+        len = radioConfig[i];
         if(i == 0)
             continue;
-        memcpy(buf, catsConfig+i+1, len);
+        memcpy(buf, radioConfig+i+1, len);
         si_send_command(buf, len);
     }
-    if(si_check() != 1)
-        return 0;
     si_cli();
     radio_sleep();
-    mcu_sleep(250);
     return 1;
 }
 
@@ -64,10 +61,10 @@ int radio_tx(uint8_t* data, int len)
     si_cli();
 
     // Start the transmission
-    int fifo_space = 64;
+    int fifo_space = 128;
     int chunk_len = (len < fifo_space) ? len : fifo_space;
     printf("INITIAL LEN %d", chunk_len);
-    uint8_t txBuf[64];
+    uint8_t txBuf[128];
     memcpy(txBuf, data, chunk_len);
 
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
@@ -76,9 +73,9 @@ int radio_tx(uint8_t* data, int len)
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     
     gpio_write(TX_LED_PIN, GPIO_HIGH);
-    si_send_command((uint8_t[]){RF4463_CMD_START_TX, radio_channel, 0x10, len >> 8, len & 0xFF, 0, 0}, 7);
-
+    si_send_command((uint8_t[]){RF4463_CMD_START_TX, 20, 0b00010000, (uint8_t)((uint16_t)len >> 8), (uint8_t)len, 0, 0}, 6);
     int_radio_state = RADIO_STATE_TX;
+    return;
 
     // Step through the buffer until TX is finished
     // TODO: Add a timeout(?)
@@ -138,9 +135,7 @@ void radio_poweron()
     gpio_write(RADIO_SDN_PIN, GPIO_LOW);
     mcu_sleep(5);
 
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
     si_send_command(buf, 7);
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     mcu_sleep(250);
 }
 
@@ -190,7 +185,7 @@ int si_send_command(uint8_t* cmd, int len)
 
     // Send the command
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    cspi_transfer(CSPI_PORT0, buf, len);
+    cspi_write(CSPI_PORT0, buf, len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
     si_cts();
@@ -307,9 +302,7 @@ void si_enable_rx_int()
 
 int si_cli()
 {
-    gpio_write(RADIO_CS_PIN, GPIO_LOW);
     si_send_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0x00, 0x00, 0x00}, 1);
-    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 }
 
 int si_irq()
