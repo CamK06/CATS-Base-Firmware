@@ -1,5 +1,5 @@
 # Set minimum required version of CMake
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14)
 
 # Include build functions from Pico SDK
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
@@ -20,6 +20,7 @@ add_definitions("-DUSBD_VID=0xdead")
 add_definitions("-DUSBD_PID=0xbeef")
 add_definitions("-DUSBD_PRODUCT=\"CATS Transceiver\"")
 add_definitions("-DUSBD_MANUFACTURER=\"VE3KCN\"")
+add_definitions("-DPICO_ENTER_USB_BOOT_ON_EXIT=1")
 
 # Set name of project (as PROJECT_NAME) and C/C   standards
 project(catsbase C CXX ASM)

@@ -1,21 +1,29 @@
-#pragma once
+#ifndef CATS_SETTINGS_H
+#define CATS_SETTINGS_H
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "flash.h"
+// Possible data types for environment variables
+typedef enum cats_env_var_type {
+    CATS_STRING,
+    CATS_BOOL,
+    CATS_UINT8,
+    CATS_UINT16,
+    CATS_UINT32
+}   cats_env_var_type_t;
 
-typedef struct tnc_settings
-{
-    int firmware_version;
-    char callsign[16];
-    bool transmit;
-    bool shell_echo;
-} tnc_settings;
+typedef struct cats_env_var {
+    char name[16];
+    char val[255];
+    cats_env_var_type_t type;
+} cats_env_var_t;
 
-extern tnc_settings settings;
+extern cats_env_var_t env_vars[];
+extern int varCount;
 
-#define SETTINGS_FLASH_ADDR (flash_size() - (flash_sector_size()*sizeof(tnc_settings)))
-#define SETTINGS_BUF_SIZE flash_page_size()*(sizeof(tnc_settings)/flash_page_size())
+int str_to_var(cats_env_var_t* var, char* str);
+char* var_type_to_str(cats_env_var_t* var);
+char* var_to_str(cats_env_var_t* var);
+cats_env_var_t* get_var(char* name);
+cats_env_var_t** get_all_vars();
 
 // Load settings from flash
 void settings_load();
@@ -23,3 +31,8 @@ void settings_load();
 void settings_save();
 // Erase all settings from flash
 void settings_erase();
+
+#define SETTINGS_FLASH_ADDR (flash_size() - (flash_sector_size()*(sizeof(cats_env_var_t)*varCount)))
+#define SETTINGS_BUF_SIZE flash_page_size()*((sizeof(cats_env_var_t)*varCount)/flash_page_size())
+
+#endif

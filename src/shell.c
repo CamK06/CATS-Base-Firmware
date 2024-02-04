@@ -1,38 +1,79 @@
 #include "shell.h"
+#include "commands.h"
 #include "serial.h"
 #include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "serial.h"
 
-char shellBuf[SHELL_BUF_LEN];
+char cmdBuf[255];
 int bufPtr = 0;
 
 void shell_init()
 {
-    for(int i = 0; i < SHELL_BUF_LEN; i++)
-        shellBuf[i] = 0;
-    serial_write("OK.\n" SHELL_PROMPT);
+    
 }
 
 void shell()
 {
-    // Read from stdin
-    int16_t rxChar = serial_read(1);
-    if(rxChar == -1)
+    // Readability? pffffttt what's that?
+    while(serial_available()) {
+        char c = serial_read();
+        if(bufPtr >= 254 && c != '\r' && c != 0x7f) // Don't overflow; only allow return and delete
+            continue;
+        serial_putchar(c);
+        if(c == 0x7f && bufPtr >= 1) { // Backspace/delete
+            serial_write("\b \b"); // this is kinda ghetto
+            cmdBuf[--bufPtr] = 0;
+            continue;
+        }
+        cmdBuf[bufPtr++] = c;
+        if(c == '\r')
+            break;
+    }
+    if(cmdBuf[bufPtr-1] != '\r')
         return;
-    shellBuf[bufPtr] = rxChar;
+    serial_putchar('\n');
+    bufPtr = 0;
 
-    if(bufPtr != SHELL_BUF_LEN-1) // Last char of the buffer can only be return, backspace, etc
-        serial_putchar(shellBuf[bufPtr]);
+    // This is a stupid hack, please do this properly later
+    int argc = 1;
+    for(int i = 0; i < strlen(cmdBuf); i++)
+        if(cmdBuf[i] == ' ') argc++;
+    char* argv[argc];
+    argc = 0;
 
-    if(shellBuf[bufPtr] == '\n') {
-        // TODO: Parse and execute command
-        serial_write("OK.\n" SHELL_PROMPT);
-        bufPtr = 0;
-        return;
+    char* token = strtok(cmdBuf, " ");
+    while(token != NULL) {
+        for(int i = 0; i < strlen(token); i++) // Commands cannot have a newline
+            if(token[i] == '\n' || token[i] == '\r')
+                token[i] = '\0';
+        
+        argv[argc] = malloc(strlen(token));
+        strcpy(argv[argc], token);
+        token = strtok(NULL, " ");
+        argc++;
     }
 
-    // Stop the 
-    if(bufPtr < SHELL_BUF_LEN-1)
-        bufPtr++;
+    if(argv[0] == NULL)
+        cmdCount = 0; // Stupid hack to skip the for loop so a prompt is printed
+    for(int i = 0; i < cmdCount; i++) {
+        if(strcmp(commands[i].cmd, argv[0]) == 0) {
+            if(argc < commands[i].minArgs+1) {
+                printf("Usage: %s %s\n", commands[i].cmd, commands[i].usage);
+                puts("FAIL");
+                break;
+            }
+            
+            int r = commands[i].fun(argc, argv);
+            if(r == SHELL_OK)
+                puts("OK");
+            else
+                puts("FAIL");
+        }
+    }
+    serial_putchar('>');
 }
 
 void shell_terminate()

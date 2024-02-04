@@ -5,7 +5,7 @@
 
 // Board
 #define KCN_RP2040_BASE
-#define KCN_RP2040_REV1 // TEMPORARY. Final board is Rev2, this is just to account for minor pin changes between the two
+//#define KCN_RP2040_REV1 // TEMPORARY. Final board is Rev2, this is just to account for minor pin changes between the two
 
 // DO NOT EDIT BELOW THIS LINE
 
