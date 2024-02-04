@@ -1,25 +1,24 @@
-#include "version.h"
 #include "config.h"
+#include "version.h"
 
 #include "gpio.h"
-#include "serial.h"
-#include "radio.h"
-#include "settings.h"
-#include "shell.h"
 #include "util.h"
-#include "cats/cats.h"
-#include <string.h>
-#include <stdbool.h>
+#include "radio.h"
+#include "shell.h"
+#include "serial.h"
+#include "settings.h"
 
 #include <pico.h>
-#include <pico/usb_reset_interface.h>
 #include <pico/bootrom.h>
+#include <pico/usb_reset_interface.h>
+
+#include <stdbool.h>
 
 // TODO: USE FREERTOS
 
 int main() {
     // Initialization
-    //settings_load();
+    settings_load();
     serial_init(115200);
     radio_init();
     radio_set_channel(20); // 430.5MHz with current config   TODO: Make this generic so it works with any radio as channels may differ

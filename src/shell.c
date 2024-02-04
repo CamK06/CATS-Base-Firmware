@@ -1,19 +1,13 @@
 #include "shell.h"
-#include "commands.h"
 #include "serial.h"
-#include <stdint.h>
+#include "commands.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "serial.h"
 
 char cmdBuf[255];
 int bufPtr = 0;
-
-void shell_init()
-{
-    
-}
 
 void shell()
 {
@@ -51,6 +45,8 @@ void shell()
                 token[i] = '\0';
         
         argv[argc] = malloc(strlen(token));
+        if(argv[argc] == NULL)
+            return; // Malloc fail
         strcpy(argv[argc], token);
         token = strtok(NULL, " ");
         argc++;
@@ -62,16 +58,19 @@ void shell()
         if(strcmp(commands[i].cmd, argv[0]) == 0) {
             if(argc < commands[i].minArgs+1) {
                 printf("Usage: %s %s\n", commands[i].cmd, commands[i].usage);
-                puts("FAIL");
+                serial_write("FAIL\n");
                 break;
             }
             
             int r = commands[i].fun(argc, argv);
             if(r == SHELL_OK)
-                puts("OK");
+                serial_write("OK\n");
             else
-                puts("FAIL");
+                serial_write("FAIL\n");
         }
+    }
+    for(int i = 0; i < argc; i++) {
+        free(argv[i]);
     }
     serial_putchar('>');
 }

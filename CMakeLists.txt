@@ -39,6 +39,7 @@ add_executable(${PROJECT_NAME}
 
 # Create map/bin/hex/uf2 files
 pico_add_extra_outputs(${PROJECT_NAME})
+pico_set_linker_script(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/memmap_2040.ld)
 
 # Ensure tinyusb can see tusb_config.h
 target_include_directories(catsbase PUBLIC src src/drivers/common)

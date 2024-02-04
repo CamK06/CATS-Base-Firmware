@@ -32,7 +32,7 @@ void settings_save();
 // Erase all settings from flash
 void settings_erase();
 
-#define SETTINGS_FLASH_ADDR (flash_size() - (flash_sector_size()*(sizeof(cats_env_var_t)*varCount)))
-#define SETTINGS_BUF_SIZE flash_page_size()*((sizeof(cats_env_var_t)*varCount)/flash_page_size())
+
+#define SETTINGS_BUF_SIZE (sizeof(cats_env_var_t)*varCount)
 
 #endif

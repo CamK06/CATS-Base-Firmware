@@ -127,20 +127,16 @@ char* var_to_str(cats_env_var_t* var)
 
 void settings_load()
 {
-    flash_read(SETTINGS_FLASH_ADDR, SETTINGS_BUF_SIZE, (char*)&env_vars);
+    flash_read(SETTINGS_BUF_SIZE, (char*)env_vars);
 }
 
 void settings_save()
 {
-    uint8_t buf[SETTINGS_BUF_SIZE];
-    memcpy(buf, 0x00, SETTINGS_BUF_SIZE);
-    memcpy(buf, &env_vars, SETTINGS_BUF_SIZE);
-
     settings_erase();
-    flash_write(SETTINGS_FLASH_ADDR, SETTINGS_BUF_SIZE, (char*)buf);
+    flash_write(SETTINGS_BUF_SIZE, (char*)env_vars);
 }
 
 void settings_erase()
 {
-    flash_erase(SETTINGS_FLASH_ADDR, SETTINGS_BUF_SIZE);
+    flash_erase(SETTINGS_BUF_SIZE);
 }

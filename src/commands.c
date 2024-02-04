@@ -65,6 +65,7 @@ int cmdCount = sizeof(commands)/sizeof(shell_cmd_t);
 int cmd_store_settings(int argc, char* argv[])
 {
     // TODO: Actually save
+    settings_save();
     puts("Settings saved to memory!");
     return SHELL_OK;
 }
