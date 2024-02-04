@@ -69,32 +69,29 @@ int radio_tx(uint8_t* data, int len)
 
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
     cspi_byte(CSPI_PORT0, RF4463_CMD_TX_FIFO_WRITE);
-    cspi_transfer(CSPI_PORT0, txBuf, chunk_len);
+    cspi_write(CSPI_PORT0, txBuf, chunk_len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     
     gpio_write(TX_LED_PIN, GPIO_HIGH);
     si_send_command((uint8_t[]){RF4463_CMD_START_TX, 20, 0b00010000, (uint8_t)((uint16_t)len >> 8), (uint8_t)len, 0, 0}, 6);
     int_radio_state = RADIO_STATE_TX;
-    return;
 
     // Step through the buffer until TX is finished
     // TODO: Add a timeout(?)
     int tx = chunk_len;
     while(int_radio_state == RADIO_STATE_TX) {
-        if(si_irq()) {
-            si_cli();
-            break;
-        }
+        // if(si_irq()) {
+        //     si_cli();
+        //     break;
+        // }
 
         fifo_space = si_tx_fifo_space();
         if(fifo_space <= 0)
             continue;
-
         chunk_len = ((len - tx) < fifo_space) ? (len - tx) : fifo_space;
         printf("LEN: %d  FIFO: %d  LEN-TX:%d\n", chunk_len, fifo_space, len-tx);
-        if(chunk_len <= 0) {
-            mcu_sleep(16);
-            continue;
+        if(chunk_len == 0) {
+            break;
         }
         memcpy(txBuf, data+tx, chunk_len);
 
@@ -106,13 +103,9 @@ int radio_tx(uint8_t* data, int len)
         // Send the next chunk
         gpio_write(RADIO_CS_PIN, GPIO_LOW);
         cspi_byte(CSPI_PORT0, RF4463_CMD_TX_FIFO_WRITE);
-        cspi_transfer(CSPI_PORT0, txBuf, chunk_len);
+        cspi_write(CSPI_PORT0, txBuf, chunk_len);
         gpio_write(RADIO_CS_PIN, GPIO_HIGH);
         tx += chunk_len;
-        mcu_sleep(16);
-
-        if(si_packet_sent_pending())
-            break;
     }
     
     // Cleanup
@@ -206,7 +199,7 @@ int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen)
 
     // Send the command to read
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    cspi_transfer(CSPI_PORT0, buf, len);
+    cspi_write(CSPI_PORT0, buf, len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
     
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
