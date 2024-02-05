@@ -20,7 +20,7 @@ radio_state_t int_radio_state = RADIO_STATE_IDLE;
 radio_rx_cb_t rx_Callback;
 int radio_channel = 0;
 
-int radio_init()
+int radio_start()
 {
     // Initialize GPIO + SPI
     gpio_setup(RADIO_SDN_PIN);
@@ -34,7 +34,7 @@ int radio_init()
     cspi_set_pins(RADIO_TX_PIN, RADIO_RX_PIN, RADIO_SCK_PIN, RADIO_CS_PIN);
 
     // Initialize the RF4463
-    radio_poweron();
+    si_poweron();
 
     // Set the radio parameters
     int len;
@@ -51,6 +51,11 @@ int radio_init()
     si_send_command((uint8_t[]){RF4463_CMD_SET_PROPERTY, 0x01, 2, 0x00, 0b00000001, 0b00110011}, 6);
     radio_sleep();
     return 1;
+}
+
+int radio_interrupt(uint8_t* buf)
+{
+
 }
 
 int radio_tx(uint8_t* data, int len)
@@ -116,7 +121,19 @@ int radio_tx(uint8_t* data, int len)
     return 0;
 }
 
-void radio_poweron()
+int radio_start_rx()
+{
+    int_radio_state = RADIO_STATE_RX;
+    si_start_rx(0);
+    return 0;
+}
+
+int radio_rx(uint8_t* buf)
+{
+
+}
+
+void si_poweron() // TODO: Move to bottom of file
 {
     uint8_t buf[7];
     memcpy(buf, radioConfig+1, 7);
@@ -148,6 +165,7 @@ void radio_set_rx_callback(radio_rx_cb_t cb)
 
 radio_state_t radio_get_state()
 {
+    //rf4463_state_t state = si_get_state();
     return int_radio_state;
 }
 

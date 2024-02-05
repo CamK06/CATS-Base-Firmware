@@ -474,7 +474,9 @@ int si_set_property(uint16_t property, uint8_t* data, uint8_t len);
 int si_send_command(uint8_t* cmd, int len);
 int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen);
 int si_read_rx_fifo(uint8_t* outData);
+int si_get_state();
 
+void si_poweron();
 void si_start_rx(int len);
 int si_rx_packet(uint8_t* outData, int len);
 int si_rx_fifo_len();

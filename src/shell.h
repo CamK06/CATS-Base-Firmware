@@ -14,9 +14,7 @@ typedef struct shell_cmd {
 
 // Initialize the shell
 void shell_init();
-// Cleanly exit the shell
-void shell_terminate();
 // Step the shell; called in a loop
-void shell();
+void shell_tick();
 
 #endif

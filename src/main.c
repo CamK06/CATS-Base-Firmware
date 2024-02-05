@@ -1,16 +1,12 @@
 #include "shell.h"
+#include "radio.h"
 #include "config.h"
 #include "version.h"
 #include "settings.h"
 
 #include "drivers/serial.h"
-#include "drivers/radio.h"
 #include "drivers/gpio.h"
 #include "drivers/mcu.h"
-
-#include <pico.h>
-#include <pico/bootrom.h>
-#include <pico/usb_reset_interface.h>
 
 #include <stdbool.h>
 
@@ -41,10 +37,14 @@ void error(error_type_t err) {
     }
 }
 
+int beacon_tick()
+{
+
+}
+
 int main() {
     // Initialization
     serial_init(115200);
-    radio_set_channel(20); // 430.5MHz with current config   TODO: Make this generic so it works with any radio as channels may differ
     //settings_load();
     if(!radio_init())
         error(ERROR_RADIO);
@@ -74,21 +74,17 @@ int main() {
     while(true) {
         if(serial_connected() && !usbConnected) {
             usbConnected = true;
-            serial_write(DEVICE_NAME "\n");
-            serial_write("Firmware Version: " VERSION "\n");
-            serial_write("Build: " BUILD_STR "\n");
+	        shell_init();
             gpio_write(USB_LED_PIN, usbConnected);
-            serial_putchar('>');
-            continue;
         } else if(!serial_connected() && usbConnected) {
             usbConnected = false;
-            shell_terminate();
             gpio_write(USB_LED_PIN, usbConnected);
-            reset_usb_boot(0, 0);
-            continue;
+            mcu_flash();
         }
-        if(serial_available())
-            shell();
+        
+	    radio_tick();
+	    shell_tick();
+	    beacon_tick();
         mcu_sleep(1);
     }
 }

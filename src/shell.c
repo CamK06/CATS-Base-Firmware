@@ -1,6 +1,9 @@
 #include "shell.h"
-#include "drivers/serial.h"
 #include "commands.h"
+#include "config.h"
+#include "version.h"
+
+#include "drivers/serial.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -9,7 +12,17 @@
 char cmdBuf[255];
 int bufPtr = 0;
 
-void shell()
+void shell_init()
+{
+    memset(cmdBuf, 0x00, 255);
+    bufPtr = 0;
+    serial_write(DEVICE_NAME "\n");
+    serial_write("Firmware Version: " VERSION "\n");
+    serial_write("Build: " BUILD_STR "\n");
+    serial_putchar('>');
+}
+
+void shell_tick()
 {
     // Readability? pffffttt what's that?
     while(serial_available()) {
@@ -73,9 +86,4 @@ void shell()
         free(argv[i]);
     }
     serial_putchar('>');
-}
-
-void shell_terminate()
-{
-
 }
