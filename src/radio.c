@@ -25,3 +25,8 @@ void radio_tick()
 	    // Packet is in radioBuf; TODO: handle it.
     }
 }
+
+int radio_send(uint8_t* data, int len)
+{
+    radio_tx(data, len);
+}

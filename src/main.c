@@ -8,9 +8,7 @@
 #include "drivers/gpio.h"
 #include "drivers/mcu.h"
 
-#include <stdbool.h>
-
-// TODO: USE FREERTOS
+uint32_t lastBeaconTx;
 
 typedef enum errorType {
     ERROR_RADIO,
@@ -37,9 +35,14 @@ void error(error_type_t err) {
     }
 }
 
-int beacon_tick()
+void beacon_tick()
 {
-
+    if(!get_var("BEACON")->val[0])
+        return;
+    if(mcu_millis() - lastBeaconTx >= var_val_int(get_var("BEACON_INTERVAL"))*1000) {
+        radio_send("This is a test packet being transmitted at a regular interval!", 63);
+        lastBeaconTx = mcu_millis();
+    }
 }
 
 int main() {
@@ -70,14 +73,14 @@ int main() {
 
     // Main Loop
     // TODO: Use interrupts instead of polling?
-    bool usbConnected = false;
-    while(true) {
+    uint8_t usbConnected = 0;
+    while(1) {
         if(serial_connected() && !usbConnected) {
-            usbConnected = true;
+            usbConnected = 1;
 	        shell_init();
             gpio_write(USB_LED_PIN, usbConnected);
         } else if(!serial_connected() && usbConnected) {
-            usbConnected = false;
+            usbConnected = 0;
             gpio_write(USB_LED_PIN, usbConnected);
             mcu_flash();
         }

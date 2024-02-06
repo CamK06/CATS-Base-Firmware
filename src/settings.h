@@ -24,6 +24,7 @@ char* var_type_to_str(cats_env_var_t* var);
 char* var_to_str(cats_env_var_t* var);
 cats_env_var_t* get_var(char* name);
 cats_env_var_t** get_all_vars();
+int var_val_int(cats_env_var_t* var);
 
 // Load settings from flash
 void settings_load();

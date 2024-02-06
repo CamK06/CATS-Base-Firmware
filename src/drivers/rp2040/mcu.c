@@ -23,4 +23,9 @@ int mcu_flash()
     return 0;
 }
 
+uint32_t mcu_millis()
+{
+    return to_ms_since_boot(get_absolute_time());;
+}
+
 #endif

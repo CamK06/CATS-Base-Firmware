@@ -17,6 +17,16 @@ cats_env_var_t env_vars[] = {
         "TX\0",
         { 0 },
         CATS_BOOL
+    },
+    {
+        "BEACON\0",
+        { 0 },
+        CATS_BOOL
+    },
+    {
+        "BEACON_INTERVAL\0",
+        { 5 & 0xFF, 5 >> 8 },
+        CATS_UINT16
     }
 };
 int varCount = sizeof(env_vars)/sizeof(cats_env_var_t);
@@ -114,6 +124,13 @@ char* var_to_str(cats_env_var_t* var)
         break;
     }
     return out;
+}
+
+int var_val_int(cats_env_var_t* var) // TEMPORARY! TODO: Remove this when new settings system is done!
+{
+    int ret;
+    memcpy(&ret, var->val, sizeof(uint32_t));
+    return ret;
 }
 
 uint16_t crc16(uint8_t* data, int len)
