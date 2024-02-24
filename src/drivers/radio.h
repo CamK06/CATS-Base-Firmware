@@ -12,7 +12,7 @@ typedef enum radio_state {
 
 // Initialize the radio. Returns 0 if initialization succeeded, -1 if failed
 int radio_start();
-int radio_interrupt(uint8_t* buf);
+int radio_poll_interrupt(uint8_t* buf);
 // Transmit a packet. Returns 0 if the command was successfully sent, -1 if failed, *NOT* if the transmission itself succeeded or failed
 int radio_tx(uint8_t* data, int len);
 // Finish receiving a packet after it is already in the RX FIFO

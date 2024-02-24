@@ -8,6 +8,13 @@
 #include "drivers/gpio.h"
 #include "drivers/mcu.h"
 
+#include <cats/packet.h>
+#include <cats/error.h>
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
 uint32_t lastBeaconTx;
 
 typedef enum errorType {
@@ -40,7 +47,38 @@ void beacon_tick()
     if(!get_var("BEACON")->val[0])
         return;
     if(mcu_millis() - lastBeaconTx >= var_val_int(get_var("BEACON_INTERVAL"))*1000) {
-        radio_send("This is a test packet being transmitted at a regular interval!", 63);
+        //uint8_t txBuf[] = {14, 0, 'V', 'E', '3', 'K', 'C', 'N', ' ', 'B', 'E', 'A', 'C', 'O', 'N', '\0'};
+        
+        serial_write("Beaconing!\n");
+        // uint8_t* txBuf = NULL;
+        // cats_packet_t* pkt;
+        // cats_packet_prepare(&pkt);
+        // cats_packet_add_identification(pkt, "VE3KCN", 17, 0);
+        // cats_packet_add_comment(pkt, "Hello libCATS World!");
+        // cats_packet_add_gps(pkt, 43.392281, -80.351509, 5, 0, 0, 0);
+        // int len = cats_packet_build(pkt, &txBuf);
+        uint8_t txBuf[CATS_MAX_PKT_LEN];
+
+
+        uint8_t* buf = NULL;
+        cats_packet_t* pkt;
+        cats_packet_prepare(&pkt);
+        cats_packet_add_identification(pkt, "VE3KCN", 17, 1);
+        cats_packet_add_comment(pkt, get_var("STATUS")->val);
+        cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
+        uint16_t len = cats_packet_build(pkt, &buf);
+        printf("%d bytes: ", len);
+        for(int i = 0; i < len; i++)
+            printf("%X ", buf[i]);
+        printf("\n");
+
+        //memcpy(txBuf, &len, sizeof(uint16_t));
+        memcpy(txBuf, buf, len);
+        radio_send(buf, len);
+
+        free(buf);
+        free(pkt);
+
         lastBeaconTx = mcu_millis();
     }
 }
@@ -48,7 +86,7 @@ void beacon_tick()
 int main() {
     // Initialization
     serial_init(115200);
-    //settings_load();
+    settings_load();
     if(!radio_init())
         error(ERROR_RADIO);
 
@@ -72,7 +110,6 @@ int main() {
     }
 
     // Main Loop
-    // TODO: Use interrupts instead of polling?
     uint8_t usbConnected = 0;
     while(1) {
         if(serial_connected() && !usbConnected) {

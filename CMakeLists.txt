@@ -41,16 +41,16 @@ add_executable(${PROJECT_NAME}
 pico_add_extra_outputs(${PROJECT_NAME})
 pico_set_linker_script(${PROJECT_NAME} ${CMAKE_SOURCE_DIR}/memmap_2040.ld)
 
-#add_subdirectory(libCATS)
+add_subdirectory(libCATS)
 
 # Ensure tinyusb can see tusb_config.h
-#target_include_directories(catsbase PUBLIC src libCATS/include)
+target_include_directories(catsbase PUBLIC src libCATS/include)
 target_include_directories(catsbase PUBLIC src)
 
 # Link to pico_stdlib (gpio, time, etc. functions)
 target_link_libraries(${PROJECT_NAME} 
-    #PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi hardware_gpio CATS
-    PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi hardware_gpio
+    PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi hardware_gpio CATS
+    #PUBLIC pico_stdlib pico_unique_id hardware_flash hardware_sync hardware_irq hardware_spi hardware_gpio
 )
 
 # Enable usb output, disable uart output

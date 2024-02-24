@@ -477,8 +477,6 @@ int si_read_rx_fifo(uint8_t* outData);
 int si_get_state();
 
 void si_poweron();
-void si_start_rx(int len);
-int si_rx_packet(uint8_t* outData, int len);
 int si_rx_fifo_len();
 int si_tx_fifo_space();
 int si_packet_sent_pending();

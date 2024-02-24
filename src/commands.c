@@ -3,12 +3,34 @@
 #include "commands.h"
 #include "version.h"
 #include "config.h"
+#include "radio.h"
+
 #include "drivers/mcu.h"
-#include "drivers/radio.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+int cmd_tx(int argc, char* argv[])
+{
+    if(argc <= 1)
+        return SHELL_FAIL;
+    
+    char val[255];
+    strcpy(val+2, argv[1]);
+    int idx = strlen(argv[1])+2;
+    for(int i = 2; i < argc; i++) {
+        val[idx++] = ' ';
+        strcpy(val+idx, argv[i]);
+        idx += strlen(argv[i]);
+    }
+    uint16_t len = strlen(val+2);
+    memcpy(val, &len, sizeof(uint16_t));
+
+    radio_send(val, len+2);
+    printf("Sent %d bytes: %s\n", strlen(val+2), val+2);
+    return SHELL_OK;
+}
 
 shell_cmd_t commands[] = {
     {
@@ -59,6 +81,13 @@ shell_cmd_t commands[] = {
         "flash",
         0,
         &cmd_reboot
+    },
+    {
+        "tx",
+        "Software reboot",
+        "flash",
+        0,
+        &cmd_tx
     }
 };
 int cmdCount = sizeof(commands)/sizeof(shell_cmd_t);
@@ -167,6 +196,6 @@ int cmd_reboot(int argc, char* argv[])
     }
     else {
         puts("Rebooting...");
-        for(;;);
+        while(1);
     }
 }

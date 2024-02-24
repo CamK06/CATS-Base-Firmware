@@ -27,6 +27,11 @@ cats_env_var_t env_vars[] = {
         "BEACON_INTERVAL\0",
         { 5 & 0xFF, 5 >> 8 },
         CATS_UINT16
+    },
+    {
+        "STATUS\0",
+        "Hello CATS world!\0",
+        CATS_STRING
     }
 };
 int varCount = sizeof(env_vars)/sizeof(cats_env_var_t);
