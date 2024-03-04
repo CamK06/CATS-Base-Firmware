@@ -30,7 +30,7 @@ int radio_start()
     gpio_set_mode(RADIO_CS_PIN, GPIO_OUTPUT);
     gpio_set_mode(RADIO_IRQ_PIN, GPIO_INPUT);
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    cspi_init(1000000, CSPI_PORT0, CSPI_MSB_FIRST);
+    cspi_init(10000000, CSPI_PORT0, CSPI_MSB_FIRST);
     cspi_set_pins(RADIO_TX_PIN, RADIO_RX_PIN, RADIO_SCK_PIN, RADIO_CS_PIN);
 
     // Initialize the RF4463
@@ -91,7 +91,7 @@ int radio_tx(uint8_t* data, int len)
         memcpy(txBuf, data+tx, chunk_len);
 
         if(si_fifo_underflow_pending()) {
-            printf("FIFO UNDERFLOW\n");
+            //printf("FIFO UNDERFLOW\n");
             break;
         }
 
@@ -103,7 +103,7 @@ int radio_tx(uint8_t* data, int len)
         tx += chunk_len;
 
         if(si_packet_sent_pending()) {
-            printf("SENT! L: %d F: %d\n", chunk_len, fifo_space);
+            //printf("SENT! L: %d F: %d\n", chunk_len, fifo_space);
             break;
         }
     }
@@ -125,7 +125,7 @@ int si_rx_step(uint8_t* buf)
         return 0;
 
     if(si_fifo_underflow_pending()) {
-        printf("FIFO UNDERFLOW!!!\n");
+        //printf("FIFO UNDERFLOW!!!\n");
         return 0;
     }
 
@@ -136,11 +136,11 @@ int si_rx_step(uint8_t* buf)
     int read = cspi_transfer(CSPI_PORT0, data, fifoLen);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
-    printf("Read %d bytes got %d: ", fifoLen, read);
-    for(int i = 0; i < fifoLen; i++) {
-        printf("%X ", data[i]);
-    }
-    printf("\n");
+    // printf("Read %d bytes got %d: ", fifoLen, read);
+    // for(int i = 0; i < fifoLen; i++) {
+    //     printf("%X ", data[i]);
+    // }
+    // printf("\n");
 
     memcpy(buf+rxIdx, data, fifoLen);
     rxIdx += fifoLen;
@@ -152,7 +152,7 @@ int si_rx_step(uint8_t* buf)
 int radio_poll_interrupt(uint8_t* buf)
 {
     if(si_fifo_underflow_pending()) {
-        printf("FIFO UNDERFLOW!!!\n");
+        //printf("FIFO UNDERFLOW!!!\n");
         return 0;
     }
 
@@ -160,7 +160,7 @@ int radio_poll_interrupt(uint8_t* buf)
         if(si_packet_rx_pending()) {
             int_radio_state = RADIO_STATE_IDLE;
         }
-
+        
         return si_rx_step(buf);
     }
 }
@@ -187,7 +187,7 @@ int radio_rx(uint8_t* buf)
     si_send_command((uint8_t[]){RF4463_CMD_FIFO_INFO, 0x01 | 0x02}, 2);
     si_send_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0, 0, 0xFF}, 4);
     si_cli();
-    printf("Received %d bytes: %s\n", len, buf);
+    //printf("Received %d bytes: %s\n", len, buf);
     int_radio_state = RADIO_STATE_IDLE;
     return len;
 }
@@ -229,7 +229,7 @@ int si_set_property(uint16_t property, uint8_t* data, uint8_t len)
     buf[3] = property && 0xFF;
 
     gpio_write(RADIO_CS_PIN, GPIO_LOW);
-    cspi_transfer(CSPI_PORT0, buf, len+4); // cspi_write?
+    cspi_write(CSPI_PORT0, buf, len+4); // cspi_write?
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
     return 1;
@@ -245,7 +245,17 @@ int si_send_command(uint8_t* cmd, int len)
     cspi_write(CSPI_PORT0, buf, len);
     gpio_write(RADIO_CS_PIN, GPIO_HIGH);
 
-    si_cts();
+    while(1) {
+        gpio_write(RADIO_CS_PIN, GPIO_LOW);
+        cspi_byte(CSPI_PORT0, RF4463_CMD_READ_BUF);
+        if(cspi_byte(CSPI_PORT0, 0xFF) != 0xFF) {
+            gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+            continue;
+        }
+        
+        gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+        break;
+    }
     return 1;
 }
 
@@ -325,7 +335,7 @@ int si_packet_sent_pending()
     if(!si_irq())
         return 0;
     uint8_t outData[4];
-    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 5), 0xFF, 0xFF}, 4, outData, 4);
+    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 5), 0xFF, 0xFF}, 4, outData, 3);
     return (outData[2] & (1 << 5)) != 0;
 }
 
@@ -334,7 +344,7 @@ int si_packet_rx_pending()
     if(!si_irq())
         return 0;
     uint8_t outData[4];
-    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 4), 0xFF, 0xFF}, 4, outData, 4);
+    si_read_command((uint8_t[]){RF4463_CMD_GET_INT_STATUS, 0xFF ^ (1 << 4), 0xFF, 0xFF}, 4, outData, 3);
     return (outData[2] & (1 << 4)) != 0;
 }
 
