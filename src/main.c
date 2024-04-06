@@ -60,7 +60,7 @@ void print_packet(cats_packet_t* pkt)
         printf("CMNT: \t'%s'\n", comment);
     }
     if(cats_packet_get_gps(pkt, (cats_gps_whisker_t**)&data) == CATS_SUCCESS) {
-        printf("GPS: \t(%.4f, %.4f) +/- %d m, v = %.2f m/s [N %.2f] deg\nALT: %.2f m\n",
+        printf("GPS: \t(%.4f, %.4f) +/- %d m, v = %.2f m/s [N %.2f] deg\nALT: \t%.2f m\n",
                 data->gps.latitude,
                 data->gps.longitude,
                 data->gps.max_error,
