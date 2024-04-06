@@ -8,6 +8,9 @@
 #define KCN_RP2040_BASE
 //#define KCN_RP2040_REV1 // TEMPORARY. Final board is Rev2, this is just to account for minor pin changes between the two
 
+// Misc
+#define USE_GPS
+
 // DO NOT EDIT BELOW THIS LINE
 
 // Board-specific options
@@ -17,12 +20,17 @@
 #define DEVICE_HWID 0x7c70
 #ifndef KCN_RP2040_REV1
 #define DEVICE_NAME "CATS Base Transceiver R2"
-
 #else
 #define DEVICE_NAME "CATS Base Transceiver R1"
 #endif
+
 #define USE_RP2040
 #define USE_SPI
+
+#ifdef USE_GPS
+#define GPS_UART_TX 4
+#define GPS_UART_RX 5
+#endif
 
 // Indicators
 #ifdef KCN_RP2040_REV1
@@ -83,4 +91,9 @@
 #define GPIO_8_PIN 28
 #define GPIO_9_PIN 29
 
+#endif
+
+// Misc options
+#ifdef USE_GPS
+#define USE_UART
 #endif

@@ -1,5 +1,5 @@
-#ifndef CATS_ERROR_H
-#define CATS_ERROR_H
+#ifndef CATS_FW_ERROR_H
+#define CATS_FW_ERROR_H
 
 typedef enum errorType {
     ERROR_RADIO,

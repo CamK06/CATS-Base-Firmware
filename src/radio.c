@@ -20,6 +20,8 @@ static int rxIdx = 0;
 static int txLen = 0;
 static uint32_t lastTick;
 
+extern void print_packet(cats_packet_t* pkt);
+
 int radio_init()
 {
     if(!radio_start())
@@ -64,12 +66,8 @@ void radio_tick()
             return;
         }
         
-        cats_ident_whisker_t* ident;
-        cats_packet_get_identification(pkt, &ident);
-        char comment[1024];
-        cats_packet_get_comment(pkt, comment);
-    
-        printf("%s-%d: %s\n", ident->callsign, ident->ssid, comment);
+        printf("RECEIVED:\n");
+        print_packet(pkt);
 
         // Digipeating
         if(get_var("DIGIPEAT")->val[0] && cats_packet_should_digipeat(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0])) {
@@ -78,8 +76,7 @@ void radio_tick()
             int r = cats_packet_get_route(pkt, &route);
             if(r == CATS_FAIL) {
                 rxIdx = 0;
-                printf("No route!\n");
-		// TODO: Free pkt!
+		        // TODO: Free pkt!
                 return;
             }
 
@@ -94,18 +91,9 @@ void radio_tick()
             }
             cats_route_add_past_hop(route, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 0);
 
-            printf("BUILDING");
             txLen = cats_packet_encode(pkt, txBuf + 2);
 
-            printf("%d bytes: ", txLen);
-            for(int i = 0; i < txLen; i++)
-                printf("%X ", txBuf[i]);
-            printf("\n");
-
-            printf("BUILT");
             if(txLen != CATS_FAIL) {
-                printf("TX");
-
                 uint16_t l = txLen;
                 memcpy(txBuf, &txLen, sizeof(uint16_t));
                 txLen = txLen+2;
@@ -113,8 +101,7 @@ void radio_tick()
                 radio_tx(txBuf, txLen);
                 memset(txBuf, 0x00, 8191);
                 txLen = 0;
-                printf("TX2");
-                printf("DONE");
+                printf("DIGIPEATED\n");
             }
         }
 

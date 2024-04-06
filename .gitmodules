@@ -1,3 +1,6 @@
 [submodule "libCATS"]
 	path = libCATS
 	url = https://github.com/CamK06/libCATS
+[submodule "thirdparty/lwgps"]
+	path = thirdparty/lwgps
+	url = https://github.com/MaJerle/lwgps
