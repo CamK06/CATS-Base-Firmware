@@ -32,6 +32,16 @@ cats_env_var_t env_vars[] = {
         "STATUS\0",
         "Hello CATS world!\0",
         CATS_STRING
+    },
+    {
+        "DIGIPEAT\0",
+        { 0 },
+        CATS_BOOL
+    },
+    {
+        "SSID\0",
+        { 0 },
+        CATS_UINT8
     }
 };
 int varCount = sizeof(env_vars)/sizeof(cats_env_var_t);
@@ -76,8 +86,10 @@ int str_to_var(cats_env_var_t* var, char* str)
 {
     switch(var->type) {
         case CATS_STRING:
-        if(strlen(str) <= 32)
+        if(strlen(str) <= 32) {
             strcpy(var->val, str);
+            var->val[strlen(str)] = '\0';
+        }
         else
             return -1;
         break;
@@ -89,6 +101,11 @@ int str_to_var(cats_env_var_t* var, char* str)
             var->val[0] = 0;
         else 
             return -1;
+        break;
+
+        case CATS_UINT8:
+        uint8_t val8 = atoi(str);
+        var->val[0] = val8;
         break;
 
         case CATS_UINT16:
@@ -114,6 +131,10 @@ char* var_to_str(cats_env_var_t* var)
 
         case CATS_BOOL:
         sprintf(out, var->val[0] ? "TRUE" : "FALSE");
+        break;
+
+        case CATS_UINT8:
+        sprintf(out, "%d", var->val[0]);
         break;
 
         case CATS_UINT16:
@@ -160,8 +181,8 @@ void settings_load()
 
     if(crc != crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t))) {
         printf("%x != %x\n", crc, crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t)));
-        serial_write("Settings CRC checksum is invalid!\n");
-        serial_write("Settings will be reset!\n");
+        serial_write_str("Settings CRC checksum is invalid!\n");
+        serial_write_str("Settings will be reset!\n");
         return;
     }
 
@@ -169,7 +190,7 @@ void settings_load()
     for(int i = sizeof(uint16_t); i-sizeof(uint16_t) < len; i++) {
         var = buf[i];
         if(var >= varCount) {
-            serial_write("Tried to read non-existent variable!\n");
+            serial_write_str("Tried to read non-existent variable!\n");
             return;
         }
         memset(env_vars[var].val, 0x00, 255);

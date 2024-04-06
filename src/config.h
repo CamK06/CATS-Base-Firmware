@@ -6,7 +6,7 @@
 
 // Board
 #define KCN_RP2040_BASE
-#define KCN_RP2040_REV1 // TEMPORARY. Final board is Rev2, this is just to account for minor pin changes between the two
+//#define KCN_RP2040_REV1 // TEMPORARY. Final board is Rev2, this is just to account for minor pin changes between the two
 
 // DO NOT EDIT BELOW THIS LINE
 
@@ -14,6 +14,7 @@
 #ifdef KCN_RP2040_BASE
 
 #define DEVICE_VENDOR "VE3KCN"
+#define DEVICE_HWID 0x7c70
 #ifndef KCN_RP2040_REV1
 #define DEVICE_NAME "CATS Base Transceiver R2"
 

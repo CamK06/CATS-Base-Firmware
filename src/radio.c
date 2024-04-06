@@ -1,89 +1,153 @@
+#include "kiss.h"
 #include "radio.h"
 #include "config.h"
+#include "settings.h"
 
 #include "drivers/radio.h"
 #include "drivers/gpio.h"
 #include "drivers/mcu.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cats/packet.h"
 #include "cats/error.h"
 
-uint8_t radioBuf[8193];
-uint32_t lastTick;
-int bufIdx = 0;
+static uint8_t rxBuf[8193];
+static uint8_t txBuf[8193];
+static int rxIdx = 0;
+static int txLen = 0;
+static uint32_t lastTick;
 
 int radio_init()
 {
     if(!radio_start())
 	    return 0;
-    memset(radioBuf, 0x00, 8193);
+    memset(rxBuf, 0x00, 8193);
+    memset(txBuf, 0x00, 8193);
     radio_set_channel(20); // TODO: Change function to set_frequency   
 }
 
 void radio_tick()
 {
-    if(mcu_millis()-lastTick < 100)
-        return;
-        
     if(radio_get_state() == RADIO_STATE_IDLE) {
         radio_start_rx();
         return;
     }
     
-    int po = radio_poll_interrupt(radioBuf);
+    int po = radio_poll_interrupt(rxBuf);
     if(po > 0) {
-        bufIdx += po;
+        gpio_write(RX_LED_PIN, GPIO_HIGH);
+        rxIdx += po;
     }
     if(radio_get_state() == RADIO_STATE_IDLE) {
-        printf("\n\nPKT LEN: %d\n", bufIdx);
-        for(int i = 0; i < bufIdx; i++)
-            printf("%x ", radioBuf[i]);
-        printf("\n\n");
+        gpio_write(RX_LED_PIN, GPIO_LOW);
 
+        printf("\n\nPKT LEN: %d\n", rxIdx);
+        for(int i = 0; i < rxIdx; i++)
+            printf("%x ", rxBuf[i]);
+        printf("\n\n");
+        
         cats_packet_t* pkt;
         cats_packet_prepare(&pkt);
-        if(cats_packet_from_buf(pkt, radioBuf, bufIdx) != CATS_SUCCESS) {
+        if(cats_packet_decode(pkt, rxBuf, rxIdx) != CATS_SUCCESS) {
             printf("Failed to decode packet!!\n");
             printf("%s\n", cats_error_str);
-            bufIdx = 0;
-            memset(radioBuf, 8191, 0x00);
+            printf("\n\nPKT LEN: %d\n", rxIdx);
+            for(int i = 0; i < rxIdx; i++)
+                printf("%x ", rxBuf[i]);
+            printf("\n\n");
+            rxIdx = 0;
+            memset(rxBuf, 8191, 0x00);
+            gpio_write(RX_LED_PIN, GPIO_LOW);
             return;
         }
-
-        char callsign[255];
-        uint8_t ssid;
-        uint16_t icon;
-        cats_packet_get_identification(pkt, callsign, &ssid, &icon);
-
+        
+        cats_ident_whisker_t* ident;
+        cats_packet_get_identification(pkt, &ident);
         char comment[1024];
         cats_packet_get_comment(pkt, comment);
-        
-        printf("%s-%d: \n", callsign, ssid);
+    
+        printf("%s-%d: %s\n", ident->callsign, ident->ssid, comment);
 
-        bufIdx = 0;
-        memset(radioBuf, 8191, 0x00);
-        //uint16_t rxLen = radio_rx(radioBuf+2);
+        // Digipeating
+        if(get_var("DIGIPEAT")->val[0] && cats_packet_should_digipeat(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0])) {
+            int shouldDigipeat = 0;
+            cats_route_whisker_t* route;
+            int r = cats_packet_get_route(pkt, &route);
+            if(r == CATS_FAIL) {
+                rxIdx = 0;
+                printf("No route!\n");
+		// TODO: Free pkt!
+                return;
+            }
+
+            cats_route_hop_t* hop = &(route->hops);
+            while(hop != NULL) {
+                if(hop->hop_type == CATS_ROUTE_FUTURE && (strcmp(hop->callsign, get_var("CALLSIGN")->val) == 0) 
+                && hop->ssid == get_var("SSID")->val[0]) {
+                    hop->hop_type = CATS_ROUTE_PAST;
+                    break;
+                }
+                hop = hop->next;
+            }
+            cats_route_add_past_hop(route, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 0);
+
+            printf("BUILDING");
+            txLen = cats_packet_encode(pkt, txBuf + 2);
+
+            printf("%d bytes: ", txLen);
+            for(int i = 0; i < txLen; i++)
+                printf("%X ", txBuf[i]);
+            printf("\n");
+
+            printf("BUILT");
+            if(txLen != CATS_FAIL) {
+                printf("TX");
+
+                uint16_t l = txLen;
+                memcpy(txBuf, &txLen, sizeof(uint16_t));
+                txLen = txLen+2;
+
+                radio_tx(txBuf, txLen);
+                memset(txBuf, 0x00, 8191);
+                txLen = 0;
+                printf("TX2");
+                printf("DONE");
+            }
+        }
+
+        // if(txLen > 0) { // There's data pending in the TX buf
+        //     mcu_sleep(25);
+        //     radio_tx(txBuf, txLen);
+        //     memset(txBuf, 0x00, 8191);
+        //     txLen = 0;
+        // }
+        
+        rxIdx = 0;
+        memset(rxBuf, 0x00, 8193);
+        //free(pkt->whiskers);
+        //free(pkt);
     }
 
-    //int rxLen = radio_rx(radioBuf);
-    //if(rxLen > 0) { // We've received a packet
-	    //for(int i = 0; i < rxLen; i++)
-        //    printf("%X ", radioBuf[i]);
-        //printf("\n\n");
-        //printf("%s\n", radioBuf);
-    //}
-    //printf("%d ", po);
-    lastTick = mcu_millis();
+    lastTick = mcu_millis(); // This can probably be removed now that we don't use a delay
 }
 
 int radio_send(uint8_t* data, int len)
 {
+    if(rxIdx > 0 && txLen > 0) // We're receiving and there's already data pending in the TX buf
+        return -1;
+
     uint16_t l = len;
-    memcpy(radioBuf, &l, sizeof(uint16_t));
-    memcpy(radioBuf+2, data, len);
-    radio_tx(radioBuf, len+2);
-    memset(radioBuf, 0x00, 8191);
+    memcpy(txBuf, &l, sizeof(uint16_t));
+    memcpy(txBuf+2, data, len);
+    txLen = len+2;
+
+    if(rxIdx > 0) // We're actively receiving data
+        return 0;
+
+    radio_tx(txBuf, txLen);
+    memset(txBuf, 0x00, 8191);
+    txLen = 0;
 }

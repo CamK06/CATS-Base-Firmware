@@ -9,16 +9,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-char cmdBuf[255];
-int bufPtr = 0;
+static char cmdBuf[255];
+static int bufPtr = 0;
 
 void shell_init()
 {
     memset(cmdBuf, 0x00, 255);
     bufPtr = 0;
-    serial_write(DEVICE_NAME "\n");
-    serial_write("Firmware Version: " VERSION "\n");
-    serial_write("Build: " BUILD_STR "\n");
+    serial_write_str(DEVICE_NAME "\n");
+    serial_write_str("Firmware Version: " VERSION "\n");
+    serial_write_str("Build: " BUILD_STR "\n");
     serial_putchar('>');
 }
 
@@ -31,7 +31,7 @@ void shell_tick()
             continue;
         serial_putchar(c);
         if(c == 0x7f && bufPtr >= 1) { // Backspace/delete
-            serial_write("\b \b"); // this is kinda ghetto
+            serial_write_str("\b \b"); // this is kinda ghetto
             cmdBuf[--bufPtr] = 0;
             continue;
         }
@@ -71,15 +71,15 @@ void shell_tick()
         if(strcmp(commands[i].cmd, argv[0]) == 0) {
             if(argc < commands[i].minArgs+1) {
                 printf("Usage: %s %s\n", commands[i].cmd, commands[i].usage);
-                serial_write("FAIL\n");
+                serial_write_str("FAIL\n");
                 break;
             }
             
             int r = commands[i].fun(argc, argv);
             if(r == SHELL_OK)
-                serial_write("OK\n");
+                serial_write_str("OK\n");
             else
-                serial_write("FAIL\n");
+                serial_write_str("FAIL\n");
         }
     }
     for(int i = 0; i < argc; i++) {

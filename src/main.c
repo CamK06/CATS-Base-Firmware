@@ -1,5 +1,7 @@
+#include "kiss.h"
 #include "shell.h"
 #include "radio.h"
+#include "error.h"
 #include "config.h"
 #include "version.h"
 #include "settings.h"
@@ -14,70 +16,54 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 uint32_t lastBeaconTx;
-
-typedef enum errorType {
-    ERROR_RADIO,
-    ERROR_MISC
-} error_type_t;
-
-void error(error_type_t err) {
-    gpio_setup(USB_LED_PIN);
-    gpio_setup(TX_LED_PIN);
-    gpio_setup(RX_LED_PIN);
-    gpio_set_mode(USB_LED_PIN, GPIO_OUTPUT);
-    gpio_set_mode(TX_LED_PIN, GPIO_OUTPUT);
-    gpio_set_mode(RX_LED_PIN, GPIO_OUTPUT);
-    int s = 0;
-    while(1) {
-        if(err == ERROR_RADIO) {
-            gpio_write(TX_LED_PIN, s);
-            gpio_write(RX_LED_PIN, s);
-        }
-        else
-            gpio_write(USB_LED_PIN, s);
-        s = !s;
-        mcu_sleep(500);
-    }
-}
 
 void beacon_tick()
 {
     if(!get_var("BEACON")->val[0])
         return;
     if(mcu_millis() - lastBeaconTx >= var_val_int(get_var("BEACON_INTERVAL"))*1000) {
-        //uint8_t txBuf[] = {14, 0, 'V', 'E', '3', 'K', 'C', 'N', ' ', 'B', 'E', 'A', 'C', 'O', 'N', '\0'};
-        
-        serial_write("Beaconing!\n");
-        // uint8_t* txBuf = NULL;
-        // cats_packet_t* pkt;
-        // cats_packet_prepare(&pkt);
-        // cats_packet_add_identification(pkt, "VE3KCN", 17, 0);
-        // cats_packet_add_comment(pkt, "Hello libCATS World!");
-        // cats_packet_add_gps(pkt, 43.392281, -80.351509, 5, 0, 0, 0);
-        // int len = cats_packet_build(pkt, &txBuf);
+        serial_write_str("Beaconing!\n");
         uint8_t txBuf[CATS_MAX_PKT_LEN];
 
-
-        uint8_t* buf = NULL;
+        cats_route_whisker_t route = cats_route_new(3);
         cats_packet_t* pkt;
         cats_packet_prepare(&pkt);
-        cats_packet_add_identification(pkt, "VE3KCN", 17, 1);
+        cats_packet_add_identification(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 1);
         cats_packet_add_comment(pkt, get_var("STATUS")->val);
-        cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
-        uint16_t len = cats_packet_build(pkt, &buf);
+        //cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
+        cats_packet_add_gps(pkt, 43.387078, -80.336053, 5, 0, 0, 0);
+
+        cats_nodeinfo_whisker_t info;
+        info.ant_gain.enabled = false;
+        info.ant_height.enabled = false;
+        info.battery_level.enabled = false;
+        info.software_id.enabled = true;
+        info.temperature.enabled = false;
+        info.voltage.enabled = false;
+        info.tx_power.enabled = true;
+        info.uptime.enabled = true;
+        info.hardware_id.enabled = true;
+        info.tx_power.val = 30;
+        info.uptime.val = mcu_millis() / 1000;
+        info.hardware_id.val = DEVICE_HWID;
+        info.software_id.val = 1;
+        cats_packet_add_nodeinfo(pkt, info);
+        cats_packet_add_route(pkt, route);
+        
+        uint16_t len = cats_packet_encode(pkt, txBuf);
         printf("%d bytes: ", len);
         for(int i = 0; i < len; i++)
-            printf("%X ", buf[i]);
+            printf("%X ", txBuf[i]);
         printf("\n");
 
         //memcpy(txBuf, &len, sizeof(uint16_t));
-        memcpy(txBuf, buf, len);
-        radio_send(buf, len);
+        //memcpy(txBuf, buf, len);
+        radio_send(txBuf, len);
 
-        free(buf);
-        free(pkt);
+        cats_packet_destroy(&pkt);
 
         lastBeaconTx = mcu_millis();
     }

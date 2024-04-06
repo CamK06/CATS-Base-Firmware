@@ -15,11 +15,16 @@ void serial_putchar(char c)
     putchar(c);
 }
 
-void serial_write(const char* text)
+void serial_write_str(const char* text)
 {
     printf(text);
 }
 
+void serial_write(const char* buf, int len)
+{
+    for(int i = 0; i < len; i++)
+        serial_putchar(buf[i]);
+}
 
 char serial_read()
 {
