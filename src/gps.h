@@ -1,3 +1,4 @@
+#ifdef USE_GPS
 #ifndef CATS_GPS_H
 #define CATS_GPS_H
 
@@ -12,3 +13,4 @@ void gps_init();
 void gps_tick();
 
 #endif // CATS_GPS_H
+#endif
