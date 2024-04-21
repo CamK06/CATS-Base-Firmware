@@ -29,7 +29,7 @@ int radio_init()
     }
     memset(rx_buf, 0x00, 8193);
     memset(tx_buf, 0x00, 8193);
-    radio_set_channel(20); // TODO: Change function to set_frequency   
+    radio_set_frequency(430500000);  
 }
 
 void radio_tick()
@@ -46,6 +46,7 @@ void radio_tick()
     }
     if(radio_get_state() == RADIO_STATE_IDLE) {
         gpio_write(RX_LED_PIN, GPIO_LOW);
+
         cats_packet_t* pkt;
         cats_packet_prepare(&pkt);
         if(cats_packet_decode(pkt, rx_buf, rx_idx) != CATS_SUCCESS) {

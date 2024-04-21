@@ -1,6 +1,6 @@
+#include "config.h"
 #ifdef USE_GPS
 #include "gps.h"
-#include "config.h"
 
 #include "drivers/uart.h"
 

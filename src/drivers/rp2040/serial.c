@@ -22,15 +22,17 @@ void serial_write_str(const char* text)
 
 void serial_write(const char* buf, int len)
 {
-    for(int i = 0; i < len; i++)
+    for(int i = 0; i < len; i++) {
         serial_putchar(buf[i]);
+    }
 }
 
 char serial_read()
 {
-    char c = getchar_timeout_us(1);
-    if(c == PICO_ERROR_TIMEOUT)
+    const char c = getchar_timeout_us(1);
+    if(c == PICO_ERROR_TIMEOUT) {
         return -1;
+    }
     return c;
 }
 

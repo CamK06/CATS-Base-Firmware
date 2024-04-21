@@ -13,9 +13,10 @@
 
 int cmd_tx(int argc, char* argv[])
 {
-    if(argc <= 1)
+    if(argc <= 1) {
         return SHELL_FAIL;
-    
+    }
+
     char val[255];
     strcpy(val+2, argv[1]);
     int idx = strlen(argv[1])+2;
@@ -24,7 +25,7 @@ int cmd_tx(int argc, char* argv[])
         strcpy(val+idx, argv[i]);
         idx += strlen(argv[i]);
     }
-    uint16_t len = strlen(val+2);
+    const uint16_t len = strlen(val+2);
     memcpy(val, &len, sizeof(uint16_t));
 
     radio_send(val, len+2);
@@ -177,7 +178,7 @@ int cmd_help(int argc, char* argv[])
 int cmd_ver(int argc, char* argv[])
 {
     puts(DEVICE_NAME);
-    puts("Firmware Version: " VERSION);
+    puts("Firmware Version: " CATS_FW_VERSION);
     puts("Build: " BUILD_STR);
 
     return SHELL_OK;

@@ -25,3 +25,4 @@ void radio_sleep();
 radio_state_t radio_get_state();
 // Set the radio channel
 void radio_set_channel(int channel);
+void radio_set_frequency(uint32_t frequency);

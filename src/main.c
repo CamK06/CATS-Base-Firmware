@@ -1,9 +1,10 @@
+#include "config.h"
+
 #include "gps.h"
 #include "kiss.h"
 #include "shell.h"
 #include "radio.h"
 #include "error.h"
-#include "config.h"
 #include "version.h"
 #include "settings.h"
 
@@ -20,10 +21,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#ifdef USE_GPS
 #include "lwgps/lwgps.h"
 
-static uint32_t last_beacon_tx;
 lwgps_t hgps;
+#endif // USE_GPS
+static uint32_t last_beacon_tx;
 
 void print_packet(cats_packet_t* pkt)
 {
@@ -116,10 +119,12 @@ static void beacon_tick()
         cats_packet_prepare(&pkt);
         cats_packet_add_identification(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 1);
         cats_packet_add_comment(pkt, get_var("STATUS")->val);
-        cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
-        //if(hgps.is_valid) {
-         //   cats_packet_add_gps(pkt, hgps.latitude, hgps.longitude, hgps.altitude, hgps.variation, hgps.course, hgps.speed);
-        //}
+        //cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
+#ifdef USE_GPS
+        if(hgps.is_valid) {
+           cats_packet_add_gps(pkt, hgps.latitude, hgps.longitude, hgps.altitude, hgps.variation, hgps.course, hgps.speed);
+        }
+#endif
 
         cats_nodeinfo_whisker_t info;
         info.ant_gain.enabled = false;
@@ -134,7 +139,7 @@ static void beacon_tick()
         info.tx_power.val = 30;
         info.uptime.val = mcu_millis() / 1000;
         info.hardware_id.val = DEVICE_HWID;
-        info.software_id.val = 1;
+        info.software_id.val = CATS_FW_MAJOR_VERSION;
         cats_packet_add_nodeinfo(pkt, info);
         cats_packet_add_route(pkt, route);
         
@@ -153,9 +158,15 @@ int main() {
     // Initialization
     serial_init(115200);
     settings_load();
-    if(!radio_init())
+    if(!radio_init()) {
+        while(1) {
+            serial_write_str("RADIO FAILED\n");
+        }
         error(ERROR_RADIO);
-    //gps_init();
+    }
+#ifdef USE_GPS
+    gps_init();
+#endif
 
     // GPIO Setup
     gpio_setup(USB_LED_PIN);
@@ -191,7 +202,9 @@ int main() {
         
 	    radio_tick();
 	    shell_tick();
-	    //gps_tick();
+#ifdef USE_GPS
+	    gps_tick();
+#endif
         beacon_tick();
         mcu_sleep(1);
     }

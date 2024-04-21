@@ -17,7 +17,7 @@ void shell_init()
     memset(cmdBuf, 0x00, 255);
     bufPtr = 0;
     serial_write_str(DEVICE_NAME "\n");
-    serial_write_str("Firmware Version: " VERSION "\n");
+    serial_write_str("Firmware Version: " CATS_FW_VERSION "\n");
     serial_write_str("Build: " BUILD_STR "\n");
     serial_putchar('>');
 }
