@@ -44,25 +44,28 @@ cats_env_var_t env_vars[] = {
         CATS_UINT8
     }
 };
-int varCount = sizeof(env_vars)/sizeof(cats_env_var_t);
+const int var_count = sizeof(env_vars) / sizeof(cats_env_var_t);
 
-cats_env_var_t* get_var(char* name)
+cats_env_var_t* get_var(const char* name)
 {
-    for(int i = 0; i < varCount; i++)
-        if(strcmp(env_vars[i].name, name) == 0)
+    for(int i = 0; i < var_count; i++) {
+        if(strcmp(env_vars[i].name, name) == 0) {
             return &env_vars[i];
+        }
+    }
     return NULL;
 }
 
 cats_env_var_t** get_all_vars()
 {
-    cats_env_var_t** vars = malloc(sizeof(cats_env_var_t)*varCount);
-    for(int i = 0; i < varCount; i++)
+    cats_env_var_t** vars = malloc(sizeof(cats_env_var_t) * var_count);
+    for(int i = 0; i < var_count; i++) {
         vars[i] = &env_vars[i];
+    }
     return vars;
 }
 
-char* var_type_to_str(cats_env_var_t* var)
+char* var_type_to_str(const cats_env_var_t* var)
 {
     char* out = malloc(16);
     switch(var->type) {
@@ -82,7 +85,7 @@ char* var_type_to_str(cats_env_var_t* var)
     return out;
 }
 
-int str_to_var(cats_env_var_t* var, char* str)
+int str_to_var(cats_env_var_t* var, const char* str)
 {
     switch(var->type) {
         case CATS_STRING:
@@ -90,17 +93,21 @@ int str_to_var(cats_env_var_t* var, char* str)
             strcpy(var->val, str);
             var->val[strlen(str)] = '\0';
         }
-        else
+        else {
             return -1;
+        }
         break;
 
         case CATS_BOOL:
-        if(strcmp(str, "TRUE") == 0)
+        if(strcmp(str, "TRUE") == 0) {
             var->val[0] = 1;
-        else if(strcmp(str, "FALSE") == 0)
+        }
+        else if(strcmp(str, "FALSE") == 0) {
             var->val[0] = 0;
-        else 
+        }
+        else {
             return -1;
+        }
         break;
 
         case CATS_UINT8:
@@ -121,7 +128,7 @@ int str_to_var(cats_env_var_t* var, char* str)
     return 0;
 }
 
-char* var_to_str(cats_env_var_t* var)
+char* var_to_str(const cats_env_var_t* var)
 {
     char* out = malloc(32);
     switch(var->type) {
@@ -152,7 +159,7 @@ char* var_to_str(cats_env_var_t* var)
     return out;
 }
 
-int var_val_int(cats_env_var_t* var) // TEMPORARY! TODO: Remove this when new settings system is done!
+const int var_val_int(const cats_env_var_t* var) // TEMPORARY! TODO: Remove this when new settings system is done!
 {
     int ret;
     memcpy(&ret, var->val, sizeof(uint32_t));
@@ -164,40 +171,42 @@ uint16_t crc16(uint8_t* data, int len)
 	uint16_t crc = 0xFFFF;
 	for(int i = 0; i < len; i++) {
 		crc ^= data[i];
-		for(uint8_t j = 0; j < 8; j++)
+		for(uint8_t j = 0; j < 8; j++) {
 			crc = (crc & 1) != 0 ? (crc >> 1) ^ 0x8408 : crc >> 1;
+        }
 	}
 	return ~crc;
 }
 
 void settings_load()
 {
-    char buf[sizeof(env_vars)+(2*sizeof(uint16_t))];
+    char buf[sizeof(env_vars)+ (2 * sizeof(uint16_t))];
     uint16_t len, crc;
    
     flash_read(sizeof(uint16_t), (char*)&len);
-    flash_read(len+sizeof(uint16_t), buf);
-    memcpy(&crc, buf+len, sizeof(uint16_t));
+    flash_read(len + sizeof(uint16_t), buf);
+    memcpy(&crc, buf + len, sizeof(uint16_t));
 
-    if(crc != crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t))) {
-        printf("%x != %x\n", crc, crc16(buf+sizeof(uint16_t), len-sizeof(uint16_t)));
+    if(crc != crc16(buf + sizeof(uint16_t), len - sizeof(uint16_t))) {
+        printf("%x != %x\n", crc, crc16(buf + sizeof(uint16_t), len - sizeof(uint16_t)));
         serial_write_str("Settings CRC checksum is invalid!\n");
         serial_write_str("Settings will be reset!\n");
         return;
     }
 
     int var = 0;
-    for(int i = sizeof(uint16_t); i-sizeof(uint16_t) < len; i++) {
+    for(int i = sizeof(uint16_t); i - sizeof(uint16_t) < len; i++) {
         var = buf[i];
-        if(var >= varCount) {
+        if(var >= var_count) {
             serial_write_str("Tried to read non-existent variable!\n");
             return;
         }
         memset(env_vars[var].val, 0x00, 255);
         memcpy(env_vars[var].val, &buf[i+2], buf[i+1]);
-        i += buf[i+1]+1;
-        if(len-i <= 3)
+        i += buf[i + 1] + 1;
+        if(len-i <= 3) {
             break;
+        }
     }
 }
 
@@ -205,7 +214,7 @@ void settings_save()
 {
     char buf[sizeof(env_vars)];
     uint16_t idx = sizeof(uint16_t);
-    for(int i = 0; i < varCount; i++) {
+    for(int i = 0; i < var_count; i++) {
         buf[idx++] = (uint8_t)i;    // Variable index
         switch(env_vars[i].type) {  // Variable length
             case CATS_BOOL:
@@ -219,13 +228,13 @@ void settings_save()
                 buf[idx++] = 4;
             break;
             case CATS_STRING:
-                buf[idx++] = strlen(env_vars[i].val)+1; // Shouldn't exceed 255, CHANGE THIS IF VALUES ARE ALLOWED >255
+                buf[idx++] = strlen(env_vars[i].val) + 1; // Shouldn't exceed 255, CHANGE THIS IF VALUES ARE ALLOWED >255
             break;
         }
-        memcpy(&buf[idx], env_vars[i].val, buf[idx-1]); // Variable data
-        idx += buf[idx-1];
+        memcpy(&buf[idx], env_vars[i].val, buf[idx - 1]); // Variable data
+        idx += buf[idx - 1];
     }
-    uint16_t crc = crc16(buf+sizeof(uint16_t), idx-sizeof(uint16_t));
+    uint16_t crc = crc16(buf+sizeof(uint16_t), idx - sizeof(uint16_t));
     memcpy(buf, &idx, sizeof(uint16_t));    // Memory size
     memcpy(buf+idx, &crc, sizeof(uint16_t));    // CRC
     idx += sizeof(uint16_t);

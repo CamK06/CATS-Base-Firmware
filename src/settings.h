@@ -17,14 +17,13 @@ typedef struct cats_env_var {
 } cats_env_var_t;
 
 extern cats_env_var_t env_vars[];
-extern int varCount;
 
-int str_to_var(cats_env_var_t* var, char* str);
-char* var_type_to_str(cats_env_var_t* var);
-char* var_to_str(cats_env_var_t* var);
-cats_env_var_t* get_var(char* name);
+int str_to_var(cats_env_var_t* var, const char* str);
+char* var_type_to_str(const cats_env_var_t* var);
+char* var_to_str(const cats_env_var_t* var);
+cats_env_var_t* get_var(const char* name);
 cats_env_var_t** get_all_vars();
-int var_val_int(cats_env_var_t* var);
+const int var_val_int(const cats_env_var_t* var);
 
 // Load settings from flash
 void settings_load();

@@ -9,13 +9,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-static char cmdBuf[255];
-static int bufPtr = 0;
+extern const shell_cmd_t commands[];
+extern const int cmd_count;
+
+static char cmd_buf[255];
+static int buf_ptr = 0;
 
 void shell_init()
 {
-    memset(cmdBuf, 0x00, 255);
-    bufPtr = 0;
+    memset(cmd_buf, 0x00, 255);
+    buf_ptr = 0;
     serial_write_str(DEVICE_NAME "\n");
     serial_write_str("Firmware Version: " CATS_FW_VERSION "\n");
     serial_write_str("Build: " BUILD_STR "\n");
@@ -27,61 +30,79 @@ void shell_tick()
     // Readability? pffffttt what's that?
     while(serial_available()) {
         char c = serial_read();
-        if(bufPtr >= 254 && c != '\r' && c != 0x7f) // Don't overflow; only allow return and delete
-            continue;
-        serial_putchar(c);
-        if(c == 0x7f && bufPtr >= 1) { // Backspace/delete
-            serial_write_str("\b \b"); // this is kinda ghetto
-            cmdBuf[--bufPtr] = 0;
+        if(buf_ptr >= 254 && c != '\r' && c != 0x7f) { // Don't overflow; only allow return and delete
             continue;
         }
-        cmdBuf[bufPtr++] = c;
-        if(c == '\r')
+        serial_putchar(c);
+        if(c == 0x7f && buf_ptr >= 1) { // Backspace/delete
+            serial_write_str("\b \b"); // this is kinda ghetto
+            cmd_buf[--buf_ptr] = 0;
+            continue;
+        }
+        cmd_buf[buf_ptr++] = c;
+        if(c == '\r') {
             break;
+        }
     }
-    if(cmdBuf[bufPtr-1] != '\r')
+    if(cmd_buf[buf_ptr - 1] != '\r') {
         return;
+    }
     serial_putchar('\n');
-    bufPtr = 0;
+    buf_ptr = 0;
 
     // This is a stupid hack, please do this properly later
     int argc = 1;
-    for(int i = 0; i < strlen(cmdBuf); i++)
-        if(cmdBuf[i] == ' ') argc++;
+    for(int i = 0; i < strlen(cmd_buf); i++) {
+        if(cmd_buf[i] == ' ') {
+            argc++;
+        }
+    }
     char* argv[argc];
     argc = 0;
 
-    char* token = strtok(cmdBuf, " ");
+    char* token = strtok(cmd_buf, " ");
     while(token != NULL) {
-        for(int i = 0; i < strlen(token); i++) // Commands cannot have a newline
-            if(token[i] == '\n' || token[i] == '\r')
+        for(int i = 0; i < strlen(token); i++) { // Commands cannot have a newline
+            if(token[i] == '\n' || token[i] == '\r') {
                 token[i] = '\0';
+            }
+        }
         
         argv[argc] = malloc(strlen(token));
-        if(argv[argc] == NULL)
+        if(argv[argc] == NULL) {
             return; // Malloc fail
+        }
         strcpy(argv[argc], token);
         token = strtok(NULL, " ");
         argc++;
     }
 
-    if(argv[0] == NULL)
-        cmdCount = 0; // Stupid hack to skip the for loop so a prompt is printed
-    for(int i = 0; i < cmdCount; i++) {
+    if(argv[0] == NULL) { // No command
+        for(int i = 0; i < argc; i++) {
+            free(argv[i]);
+        }
+        serial_putchar('>');
+        return;
+    }
+
+    for(int i = 0; i < cmd_count; i++) {
         if(strcmp(commands[i].cmd, argv[0]) == 0) {
-            if(argc < commands[i].minArgs+1) {
+            if(argc < commands[i].min_args + 1) {
                 printf("Usage: %s %s\n", commands[i].cmd, commands[i].usage);
                 serial_write_str("FAIL\n");
                 break;
             }
             
             int r = commands[i].fun(argc, argv);
-            if(r == SHELL_OK)
+            if(r == SHELL_OK) {
                 serial_write_str("OK\n");
-            else
+            }
+            else {
                 serial_write_str("FAIL\n");
+            }
         }
     }
+
     for(int i = 0; i < argc; i++) {
         free(argv[i]);
     }

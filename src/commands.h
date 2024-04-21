@@ -11,7 +11,4 @@ int cmd_help(int argc, char* argv[]);
 int cmd_ver(int argc, char* argv[]);
 int cmd_reboot(int argc, char* argv[]);
 
-extern shell_cmd_t commands[];
-extern int cmdCount;
-
 #endif

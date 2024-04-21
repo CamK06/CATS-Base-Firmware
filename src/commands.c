@@ -11,29 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-int cmd_tx(int argc, char* argv[])
-{
-    if(argc <= 1) {
-        return SHELL_FAIL;
-    }
-
-    char val[255];
-    strcpy(val+2, argv[1]);
-    int idx = strlen(argv[1])+2;
-    for(int i = 2; i < argc; i++) {
-        val[idx++] = ' ';
-        strcpy(val+idx, argv[i]);
-        idx += strlen(argv[i]);
-    }
-    const uint16_t len = strlen(val+2);
-    memcpy(val, &len, sizeof(uint16_t));
-
-    radio_send(val, len+2);
-    printf("Sent %d bytes: %s\n", strlen(val+2), val+2);
-    return SHELL_OK;
-}
-
-shell_cmd_t commands[] = {
+const shell_cmd_t commands[] = {
     {
         "help",
         "List available commands or get usage info for a specific command",
@@ -82,20 +60,13 @@ shell_cmd_t commands[] = {
         "flash",
         0,
         &cmd_reboot
-    },
-    {
-        "tx",
-        "Software reboot",
-        "flash",
-        0,
-        &cmd_tx
     }
 };
-int cmdCount = sizeof(commands)/sizeof(shell_cmd_t);
+const int cmd_count = sizeof(commands) / sizeof(shell_cmd_t);
+extern const int var_count;
 
 int cmd_store_settings(int argc, char* argv[])
 {
-    // TODO: Actually save
     settings_save();
     puts("Settings saved to memory!");
     return SHELL_OK;
@@ -104,7 +75,7 @@ int cmd_store_settings(int argc, char* argv[])
 int cmd_list(int argc, char* argv[])
 {
     cats_env_var_t** vars = get_all_vars();
-    for(int i = 0; i < varCount; i++) {
+    for(int i = 0; i < var_count; i++) {
         char* str = var_to_str(vars[i]);
         printf("%s=%s\n", vars[i]->name, str);
         free(str);
@@ -163,9 +134,10 @@ int cmd_set(int argc, char* argv[])
 
 int cmd_help(int argc, char* argv[])
 {
-    for(int i = 0; i < cmdCount; i++) {
-        if(argc == 1)
+    for(int i = 0; i < cmd_count; i++) {
+        if(argc == 1) {
             printf("%s - %s\n", commands[i].cmd, commands[i].desc);
+        }
         if(strcmp(commands[i].cmd, argv[1]) == 0) {
             printf("%s - %s\n", commands[i].cmd, commands[i].desc);
             printf("Usage: %s %s\n", commands[i].cmd, commands[i].usage);
@@ -187,10 +159,13 @@ int cmd_ver(int argc, char* argv[])
 int cmd_reboot(int argc, char* argv[])
 {
     int r;
-    if(argc == 2 && (strcmp(argv[1], "flash") == 0))
+    if(argc == 2 && (strcmp(argv[1], "flash") == 0)) {
         r = mcu_flash();
-    else
+    }
+    else {
         r = mcu_reset();
+    }
+    
     if(r < 0) {
         puts("Not supported!");
         return SHELL_OK;
