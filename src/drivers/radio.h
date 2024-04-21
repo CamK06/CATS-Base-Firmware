@@ -26,3 +26,6 @@ radio_state_t radio_get_state();
 // Set the radio channel
 void radio_set_channel(int channel);
 void radio_set_frequency(uint32_t frequency);
+float radio_get_temp();
+float radio_get_voltage();
+float radio_get_rssi();

@@ -12,6 +12,7 @@
 #include "drivers/gpio.h"
 #include "drivers/uart.h"
 #include "drivers/mcu.h"
+#include "drivers/radio.h"
 
 #include "cats/error.h"
 #include "cats/packet.h"
@@ -49,7 +50,7 @@ void print_packet(cats_packet_t* pkt)
                 printf("%s-%d*", hop->callsign, hop->ssid);
             }
             else if(hop->hop_type == CATS_ROUTE_PAST) {
-                printf("%s-%d [%d dBm]", hop->callsign, hop->ssid, hop->rssi);
+                printf("%s-%d [%.1f dBm]", hop->callsign, hop->ssid, hop->rssi);
             }
             if(hop->next != NULL) {
                 printf(" -> ");
@@ -131,7 +132,7 @@ static void beacon_tick()
         info.ant_height.enabled = false;
         info.battery_level.enabled = false;
         info.software_id.enabled = true;
-        info.temperature.enabled = false;
+        info.temperature.enabled = true;
         info.voltage.enabled = false;
         info.tx_power.enabled = true;
         info.uptime.enabled = true;
@@ -140,6 +141,7 @@ static void beacon_tick()
         info.uptime.val = mcu_millis() / 1000;
         info.hardware_id.val = DEVICE_HWID;
         info.software_id.val = CATS_FW_MAJOR_VERSION;
+        info.temperature.val = radio_get_temp();
         cats_packet_add_nodeinfo(pkt, info);
         cats_packet_add_route(pkt, route);
         

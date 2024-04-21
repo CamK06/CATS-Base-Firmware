@@ -235,6 +235,24 @@ void radio_set_frequency(uint32_t frequency)
         ((m >> 8) & 0xFF), (m & 0xFF)}, 8);
 }
 
+float radio_get_temp()
+{
+    uint16_t result = si_get_adc(RF4463_ADC_CONV_TEMP, RF4463_ADC_SPEED << 4, 4);
+    return 899.0f * result / 4096 - 293.0f;
+}
+
+float radio_get_voltage()
+{
+    uint16_t result = si_get_adc(RF4463_ADC_CONV_VOLTS, RF4463_ADC_SPEED << 4, 2);
+    return 3 * result / 1280;
+}
+
+float radio_get_rssi()
+{
+    uint8_t frr = si_read_frr(0);
+    return (float)frr / 2.0f - 136.0f;
+}
+
 // Internal functions
 
 void si_load_config(const uint8_t* config, int len)
@@ -404,6 +422,26 @@ void si_enable_tx_int()
 void si_enable_rx_int()
 {
     //si_set_property(RF4463_PROPERTY_INT_CTL_ENABLE, (uint8_t[]){0x03, 0x18, 0x00}, 3);
+}
+
+uint16_t si_get_adc(uint8_t en, uint8_t cfg, size_t part) 
+{
+    uint8_t out[8];
+    si_read_command((uint8_t[]){RF4463_CMD_GET_ADC_READING, en, cfg}, 3, out, 8);
+    return ((uint16_t)out[part] << 8) | (uint16_t)out[part + 1];
+}
+
+uint8_t si_read_frr(size_t part) 
+{
+    uint8_t out[4];
+    memset(out, 0xff, 4);
+
+    gpio_write(RADIO_CS_PIN, GPIO_LOW);
+    cspi_byte(CSPI_PORT0, RF4463_CMD_FAST_RESPONSE_A);
+    cspi_transfer(CSPI_PORT0, out, 4);
+    gpio_write(RADIO_CS_PIN, GPIO_HIGH);
+
+    return out[part];
 }
 
 int si_cli()

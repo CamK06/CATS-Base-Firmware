@@ -2,6 +2,7 @@
 #include "config.h"
 #ifdef USE_RF4463
 #include <stdint.h>
+#include <stddef.h>
 
 #define RF4463_CTS_REPLY					  0xff
 // Waiting time for a valid FFh CTS reading
@@ -12,6 +13,9 @@
 #define RF4463_TX_TIMEOUT 					  500
 // Frequency channel
 #define RF4463_FREQ_CHANNEL					  0
+#define RF4463_ADC_CONV_TEMP                  16
+#define RF4463_ADC_SPEED                      10
+#define RF4463_ADC_CONV_VOLTS                 8
 
 //Commands
 #define RF4463_CMD_NOP                        0x00
@@ -485,6 +489,8 @@ int si_packet_rx_pending();
 int si_fifo_underflow_pending();
 void si_enable_tx_int();
 void si_enable_rx_int();
+uint16_t si_get_adc(uint8_t en, uint8_t cfg, size_t part);
+uint8_t si_read_frr(size_t part);
 
 int si_cli();
 int si_irq();

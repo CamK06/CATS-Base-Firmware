@@ -44,6 +44,7 @@ void radio_tick()
     }
     if(radio_get_state() == RADIO_STATE_IDLE) {
         gpio_write(RX_LED_PIN, GPIO_LOW);
+        float rssi = radio_get_rssi();
 
         cats_packet_t* pkt;
         cats_packet_prepare(&pkt);
@@ -55,7 +56,7 @@ void radio_tick()
             return;
         }
         
-        printf("RECEIVED:\n");
+        printf("RECEIVED [%.1f dBm]:\n", rssi);
         print_packet(pkt);
 
         // Digipeating
@@ -77,7 +78,8 @@ void radio_tick()
                 }
                 hop = hop->next;
             }
-            cats_route_add_past_hop(route, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 0);
+            cats_route_add_past_hop(route, get_var("CALLSIGN")->val, get_var("SSID")->val[0], rssi);
+            print_packet(pkt);
 
             uint8_t tx_buf[CATS_MAX_PKT_LEN];
             int tx_len = cats_packet_encode(pkt, tx_buf);
