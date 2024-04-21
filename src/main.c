@@ -147,7 +147,9 @@ static void beacon_tick()
         print_packet(pkt);
 
         uint16_t len = cats_packet_encode(pkt, tx_buf);
-        radio_send(tx_buf, len);
+        if(!radio_send(tx_buf, len)) {
+            printf("TX FAILED\n");
+        }
         cats_packet_destroy(&pkt);
 
         last_beacon_tx = mcu_millis();
