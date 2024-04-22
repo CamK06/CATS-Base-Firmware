@@ -17,7 +17,6 @@
 
 static uint8_t buf[8193];
 static int buf_idx = 0;
-static uint32_t last_tick;
 
 extern void print_packet(cats_packet_t* pkt);
 
@@ -37,7 +36,7 @@ void radio_tick()
         return;
     }
     
-    int po = radio_poll_interrupt(buf);
+    int po = radio_rx_step(buf);
     if(po > 0) {
         gpio_write(RX_LED_PIN, GPIO_HIGH);
         buf_idx += po;
@@ -84,6 +83,7 @@ void radio_tick()
             uint8_t tx_buf[CATS_MAX_PKT_LEN];
             int tx_len = cats_packet_encode(pkt, tx_buf);
             if(tx_len != CATS_FAIL) {
+                mcu_sleep(rand() % 50);
                 radio_tx(tx_buf, tx_len);
                 printf("DIGIPEATED\n");
             }
@@ -93,8 +93,6 @@ void radio_tick()
         memset(buf, 0x00, 8193);
         cats_packet_destroy(&pkt);
     }
-
-    last_tick = mcu_millis(); // This can probably be removed now that we don't use a delay
 }
 
 bool radio_send(uint8_t* data, int len)

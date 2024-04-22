@@ -476,8 +476,7 @@ typedef enum state {
 
 int si_set_property(uint16_t property, uint8_t* data, uint8_t len);
 int si_send_command(uint8_t* cmd, int len);
-int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* outData, uint8_t outLen);
-int si_read_rx_fifo(uint8_t* outData);
+int si_read_command(uint8_t* cmd, uint8_t len, uint8_t* out_data, uint8_t out_len);
 int si_get_state();
 
 void si_load_config(const uint8_t* config, int len);
@@ -487,8 +486,6 @@ int si_tx_fifo_space();
 int si_packet_sent_pending();
 int si_packet_rx_pending();
 int si_fifo_underflow_pending();
-void si_enable_tx_int();
-void si_enable_rx_int();
 uint16_t si_get_adc(uint8_t en, uint8_t cfg, size_t part);
 uint8_t si_read_frr(size_t part);
 
@@ -498,11 +495,11 @@ int si_cts();
 int si_check();
 
 #include "radio_config.h"
-const uint8_t radioConfig[] = RADIO_CONFIGURATION_DATA_ARRAY;
+const uint8_t radio_config[] = RADIO_CONFIGURATION_DATA_ARRAY;
 
 // CATS CONFIG
 // 9600bd 2FSK
-const uint8_t catsConfig[644] = { 
+const uint8_t cats_config[644] = { 
     0x7, 0x2, 0x1, 0x0, 0x1, 0xC9, 0xC3, 0x80,
     0x8, 0x13, 0x0, 0x20, 0x21, 0x20, 0x27, 0x0, 0x0,
     0x5, 0x11, 0x0, 0x1, 0x0, 0x62,

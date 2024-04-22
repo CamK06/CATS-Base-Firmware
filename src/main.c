@@ -22,6 +22,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+extern uint16_t crc16(uint8_t* data, int len);
+
 #ifdef USE_GPS
 #include "lwgps/lwgps.h"
 
@@ -171,6 +173,11 @@ int main() {
 #ifdef USE_GPS
     gps_init();
 #endif
+
+    // RNG Seed
+    uint16_t seed = crc16(get_var("CALLSIGN")->val, strlen(get_var("CALLSIGN")->val));
+    seed ^= get_var("SSID")->val[0];
+    srand(seed);
 
     // GPIO Setup
     gpio_setup(USB_LED_PIN);
