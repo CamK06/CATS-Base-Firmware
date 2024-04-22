@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_CONFIG_H
+#define CATS_FW_CONFIG_H
 
 // General
 //#define ENABLE_UART
@@ -97,3 +98,5 @@
 #ifdef USE_GPS
 #define USE_UART
 #endif
+
+#endif // CATS_FW_CONFIG_H

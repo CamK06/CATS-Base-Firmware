@@ -17,8 +17,9 @@ void error(error_type_t err) {
             gpio_write(TX_LED_PIN, s);
             gpio_write(RX_LED_PIN, s);
         }
-        else
+        else {
             gpio_write(USB_LED_PIN, s);
+        }
         s = !s;
         mcu_sleep(500);
     }

@@ -39,7 +39,6 @@ char serial_read()
 int serial_available()
 {
     return tud_cdc_available();
-    // TODO: Implement; use tud_cdc_available()?
 }
 
 int serial_connected()

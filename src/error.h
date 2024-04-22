@@ -8,4 +8,4 @@ typedef enum errorType {
 
 void error(error_type_t err);
 
-#endif
+#endif // CATS_FW_ERROR_H

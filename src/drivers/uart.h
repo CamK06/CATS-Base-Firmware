@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_UART_H
+#define CATS_FW_UART_H
 #ifdef USE_UART
 
 #include <stdint.h>
@@ -11,4 +12,5 @@ void cuart_set_pins(int tx, int rx);
 int cuart_available(int port);
 uint8_t cuart_read_byte(int port);
 
-#endif
+#endif // USE_UART
+#endif // CATS_FW_UART_H

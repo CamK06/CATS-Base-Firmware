@@ -1,5 +1,5 @@
-#ifndef CATS_KISS_H
-#define CATS_KISS_H
+#ifndef CATS_FW_KISS_H
+#define CATS_FW_KISS_H
 
 #define KISS_FEND 0xC0
 #define KISS_FESC 0xDB
@@ -18,4 +18,4 @@
 void kiss_tick();
 void kiss_send(char* buf, int len);
 
-#endif
+#endif // CATS_KISS_H

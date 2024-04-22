@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_SERIAL_H
+#define CATS_FW_SERIAL_H
 
 // Initialize serial I/O. Returns 0 if initialization succeeded, -1 if it failed.
 int serial_init(int baudRate);
@@ -14,3 +15,5 @@ int serial_available();
 char serial_read();
 // Is the PC connected/using the terminal? Returns 1 if true, 0 if false
 int serial_connected();
+
+#endif // CATS_FW_SERIAL_H

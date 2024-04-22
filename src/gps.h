@@ -1,6 +1,6 @@
 #ifdef USE_GPS
-#ifndef CATS_GPS_H
-#define CATS_GPS_H
+#ifndef CATS_FW_GPS_H
+#define CATS_FW_GPS_H
 
 typedef struct gps_position {
     double lat;
@@ -12,5 +12,5 @@ typedef struct gps_position {
 void gps_init();
 void gps_tick();
 
-#endif // CATS_GPS_H
-#endif
+#endif // CATS_FW_GPS_H
+#endif // USE_GPS

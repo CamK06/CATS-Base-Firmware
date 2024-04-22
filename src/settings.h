@@ -1,5 +1,5 @@
-#ifndef CATS_SETTINGS_H
-#define CATS_SETTINGS_H
+#ifndef CATS_FW_SETTINGS_H
+#define CATS_FW_SETTINGS_H
 
 // Possible data types for environment variables
 typedef enum cats_env_var_type {
@@ -30,4 +30,4 @@ void settings_load();
 // Save settings to flash
 void settings_save();
 
-#endif
+#endif // CATS_FW_SETTINGS_H

@@ -1,5 +1,5 @@
-#ifndef CATS_COMMANDS_H
-#define CATS_COMMANDS_H
+#ifndef CATS_FW_COMMANDS_H
+#define CATS_FW_COMMANDS_H
 
 #include "shell.h"
 
@@ -11,4 +11,4 @@ int cmd_help(int argc, char* argv[]);
 int cmd_ver(int argc, char* argv[]);
 int cmd_reboot(int argc, char* argv[]);
 
-#endif
+#endif // CATS_FW_COMMANDS_H

@@ -1,5 +1,5 @@
-#ifndef CATS_SHELL_H
-#define CATS_SHELL_H
+#ifndef CATS_FW_SHELL_H
+#define CATS_FW_SHELL_H
 
 #define SHELL_OK 0
 #define SHELL_FAIL -1
@@ -12,9 +12,7 @@ typedef struct shell_cmd {
     int (*fun)(int argc, char* argv[]);
 } shell_cmd_t;
 
-// Initialize the shell
 void shell_init();
-// Step the shell; called in a loop
 void shell_tick();
 
-#endif
+#endif // CATS_FW_SHELL_H

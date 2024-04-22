@@ -1,4 +1,6 @@
-#pragma once
+#ifndef CATS_FW_RF4463_H
+#define CATS_FW_RF4463_H
+
 #include "config.h"
 #ifdef USE_RF4463
 #include <stdint.h>
@@ -559,4 +561,5 @@ const uint8_t cats_config[644] = {
     //0xC, 0x11, 0x40, 0x8, 0x0, 0x38, 0xA, 0xAA, 0xAA, 0x6, 0xD4, 0x20, 0xFE
 };
 
-#endif
+#endif // USE_RF4463
+#endif // CATS_FW_RF4463_H

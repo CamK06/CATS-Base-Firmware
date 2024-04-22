@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_GPIO_H
+#define CATS_FW_GPIO_H
 
 #include <stdint.h>
 
@@ -23,3 +24,5 @@ void gpio_write(int pin, int state);
 void gpio_attach_interrupt(int pin, int mode, gpio_irq_cb_t cb);
 // Remove an interrupt handler from the specified pin
 void gpio_detach_interrupt(int pin);
+
+#endif // CATS_FW_GPIO_H

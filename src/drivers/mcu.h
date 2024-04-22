@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_MCU_H
+#define CATS_FW_MCU_H
 
 #include <stdint.h>
 
@@ -12,3 +13,5 @@ int mcu_reset();
 int mcu_flash();
 // Milliseconds since bootup
 uint32_t mcu_millis();
+
+#endif // CATS_FW_MCU_H

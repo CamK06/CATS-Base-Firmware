@@ -1,4 +1,5 @@
-#pragma once
+#ifndef CATS_FW_RADIO_DRIVER_H
+#define CATS_FW_RADIO_DRIVER_H
 
 #include <stdint.h>
 
@@ -20,3 +21,5 @@ void radio_set_frequency(uint32_t frequency);
 float radio_get_temp();
 float radio_get_voltage();
 float radio_get_rssi();
+
+#endif // CATS_FW_RADIO_DRIVER_H

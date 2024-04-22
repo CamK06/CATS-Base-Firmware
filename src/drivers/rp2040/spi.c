@@ -4,10 +4,10 @@
 #include "hardware/spi.h"
 #include "drivers/spi.h"
 
-void cspi_init(int baudRate, int port, int bitOrder)
+void cspi_init(int baud_rate, int port, int bit_order)
 {
-    spi_init(port == 0 ? spi0 : spi1, baudRate);
-    spi_set_format(port == 0 ? spi0 : spi1, 8, SPI_CPOL_0, SPI_CPHA_0, bitOrder);
+    spi_init(port == 0 ? spi0 : spi1, baud_rate);
+    spi_set_format(port == 0 ? spi0 : spi1, 8, SPI_CPOL_0, SPI_CPHA_0, bit_order);
     spi_set_slave(port == 0 ? spi0 : spi1, false);
 }
 
@@ -24,9 +24,9 @@ void cspi_write(int port, uint8_t *data, int len)
     spi_write_blocking(port == 0 ? spi0 : spi1, data, len);
 }
 
-int cspi_read(int port, uint8_t *outData, int len)
+int cspi_read(int port, uint8_t *out_data, int len)
 {
-    return spi_read_blocking(port == 0 ? spi0 : spi1, 0, outData, len);
+    return spi_read_blocking(port == 0 ? spi0 : spi1, 0, out_data, len);
 }
 
 int cspi_available(int port)
