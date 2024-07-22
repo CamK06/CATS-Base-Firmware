@@ -122,16 +122,16 @@ static void beacon_tick()
         cats_packet_prepare(&pkt);
         cats_packet_add_identification(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0], 1);
         cats_packet_add_comment(pkt, get_var("STATUS")->val);
-        //cats_packet_add_gps(pkt, 43.389933, -80.347411, 5, 0, 0, 0);
+        //cats_packet_add_gps(pkt, 43.407353, -80.337150, 5, 0, 0, 0);
 #ifdef USE_GPS
-        if(hgps.is_valid) {
+        if(hgps.is_valid && (hgps.latitude != 0 && hgps.longitude != 0)) {
            cats_packet_add_gps(pkt, hgps.latitude, hgps.longitude, hgps.altitude, hgps.variation, hgps.course, hgps.speed);
         }
 #endif
 
         cats_nodeinfo_whisker_t info;
-        info.ant_gain.enabled = false;
-        info.ant_height.enabled = false;
+        info.ant_gain.enabled = true;
+        info.ant_height.enabled = true;
         info.battery_level.enabled = false;
         info.software_id.enabled = true;
         info.temperature.enabled = true;
@@ -139,6 +139,13 @@ static void beacon_tick()
         info.tx_power.enabled = true;
         info.uptime.enabled = true;
         info.hardware_id.enabled = true;
+        info.is_balloon.enabled = false;
+        info.ambient_humidity.enabled = false;
+        info.ambient_pressure.enabled = false;
+        info.ambient_temp.enabled = false;
+        info.altitude.enabled = false;
+        info.ant_gain.val = 5;
+        info.ant_height.val = 5;
         info.tx_power.val = 30;
         info.uptime.val = mcu_millis() / 1000;
         info.hardware_id.val = DEVICE_HWID;
@@ -208,7 +215,7 @@ int main() {
         } else if(!serial_connected() && usb_connected) {
             usb_connected = true;
             gpio_write(USB_LED_PIN, usb_connected);
-            mcu_flash();
+            //mcu_flash();
         }
         
 	    radio_tick();
@@ -217,6 +224,6 @@ int main() {
 	    gps_tick();
 #endif
         beacon_tick();
-        mcu_sleep(1);
+        //mcu_sleep(1);
     }
 }

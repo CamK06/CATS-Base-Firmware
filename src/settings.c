@@ -89,7 +89,7 @@ int str_to_var(cats_env_var_t* var, const char* str)
 {
     switch(var->type) {
         case CATS_STRING:
-        if(strlen(str) <= 32) {
+        if(strlen(str) <= 255) {
             strcpy(var->val, str);
             var->val[strlen(str)] = '\0';
         }

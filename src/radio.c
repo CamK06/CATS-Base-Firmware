@@ -54,6 +54,8 @@ void radio_tick()
             gpio_write(RX_LED_PIN, GPIO_LOW);
             return;
         }
+        buf_idx = 0;
+        memset(buf, 0x00, 8193);
         
         printf("RECEIVED [%.1f dBm]:\n", rssi);
         print_packet(pkt);
@@ -63,7 +65,6 @@ void radio_tick()
             cats_route_whisker_t* route;
             const int r = cats_packet_get_route(pkt, &route);
             if(r == CATS_FAIL) {
-                buf_idx = 0;
 		        cats_packet_destroy(&pkt);
                 return;
             }
@@ -81,16 +82,14 @@ void radio_tick()
             print_packet(pkt);
 
             uint8_t tx_buf[CATS_MAX_PKT_LEN];
-            int tx_len = cats_packet_encode(pkt, tx_buf);
+            uint16_t tx_len = cats_packet_encode(pkt, tx_buf);
             if(tx_len != CATS_FAIL) {
-                mcu_sleep(rand() % 50);
-                radio_tx(tx_buf, tx_len);
+                mcu_sleep(rand() % 100);
+                radio_send(tx_buf, tx_len);
                 printf("DIGIPEATED\n");
             }
         }
         
-        buf_idx = 0;
-        memset(buf, 0x00, 8193);
         cats_packet_destroy(&pkt);
     }
 }
