@@ -31,10 +31,11 @@ void serial_write(const char* buf, int len)
 
 char serial_read()
 {
-    const char c = getchar_timeout_us(1);
-    if(c == PICO_ERROR_TIMEOUT) {
-        return -1;
-    }
+    const char c = tud_cdc_read_char();
+    //const char c = getchar_timeout_us(1);
+    //if(c == PICO_ERROR_TIMEOUT) {
+    //    return -1;
+    //}
     return c;
 }
 

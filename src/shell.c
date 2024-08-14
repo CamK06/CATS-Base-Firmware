@@ -25,20 +25,20 @@ void shell_init()
 
 void shell_char_in()
 {
-    char c = serial_buf[serial_buf_ptr];
+    char c = serial_buf[serial_buf_ptr - 1];
     serial_putchar(c);
-    if(c == 0x7f && serial_buf_ptr >= 1) { // Backspace/delete
+    if(c == 0x7f && serial_buf_ptr >= 2) { // Backspace/delete
         serial_write_str("\b \b"); // this is kinda ghetto
-        serial_buf[serial_buf_ptr] = 0;
+        serial_buf[--serial_buf_ptr] = 0;
         serial_buf[--serial_buf_ptr] = 0;
         return;
     }
 
-    if(serial_buf[serial_buf_ptr] != '\r') { // Don't execute command if last byte isn't enter/return
+    if(c != '\r') { // Don't execute command if last byte isn't enter/return
         return;
     }
     serial_putchar('\n');
-    serial_buf_ptr = -1; // -1 because pointer gets incremented by serial_rx_tick() in main.c
+    serial_buf_ptr = 0;
 
     // This is a stupid hack, please do this properly later
     int argc = 1;

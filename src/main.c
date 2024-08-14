@@ -24,7 +24,7 @@
 
 #define SERIAL_BUF_LEN 10000
 
-static uint8_t shell_enter_seq[] = { '+', '*', '*', '*' };
+static uint8_t shell_enter_seq[] = { '+', '*', '*' };
 static int shell_enter_seq_ptr = 0;
 
 extern uint16_t crc16(uint8_t* data, int len);
@@ -113,8 +113,14 @@ void print_packet(cats_packet_t* pkt)
             printf("TEMP: \t%d C\n", data->node_info.temperature.val);
         }
     }
-
-    printf("\n");
+	cats_whisker_t** arbitrary;
+	if((cats_packet_get_arbitrary(pkt, &arbitrary) != CATS_FAIL)
+	&& arbitrary[0]->data.raw[0] == 0xc0) {
+		printf("SRC: \tAPRS\n");
+	}
+	else {
+		printf("SRC: \tCATS\n");
+	}
 }
 
 static void beacon_tick()
@@ -182,11 +188,12 @@ void serial_rx_tick()
     while(serial_available()) {
         // Read next byte in from serial
         char c = serial_read();
-        if(serial_buf_ptr >= SERIAL_BUF_LEN - 1 && c != '\r' && c != 0x7f) { // Don't overflow; only allow return and delete if max length is reached
+        if((serial_buf_ptr >= SERIAL_BUF_LEN - 1 && c != '\r' && c != 0x7f) // Don't overflow; only allow return and delete if max length is reached
+        || c == -1) { // OR No byte was read
             return;
         }
-        serial_buf[serial_buf_ptr] = c;
-
+        serial_buf[serial_buf_ptr++] = c;
+        
         // Call the correct handler for incoming data
         if(shell_enabled) { // Shell handles the new character
             shell_char_in();
@@ -194,9 +201,9 @@ void serial_rx_tick()
         else {
             // Handle the shell startup sequence (+***)
             if(c == shell_enter_seq[0]) {
-                shell_enter_seq_ptr = serial_buf_ptr;
+                shell_enter_seq_ptr = serial_buf_ptr - 1;
             }
-            if(memcmp(shell_enter_seq, serial_buf + shell_enter_seq_ptr, 4) == 0) {
+            if(memcmp(shell_enter_seq, serial_buf + shell_enter_seq_ptr, 3) == 0) {
                 memset(serial_buf, 0x00, SERIAL_BUF_LEN);
                 serial_buf_ptr = 0;
                 shell_init();
@@ -207,7 +214,6 @@ void serial_rx_tick()
             // Handle new character with pc_iface
             pc_iface_char_in();
         }
-        serial_buf_ptr++;
     }
 }
 
@@ -258,9 +264,6 @@ int main() {
             serial_buf_ptr = 0;
             if(shell_enabled) {
                 shell_init();
-            }
-            else {
-                pc_iface_init();
             }
             gpio_write(USB_LED_PIN, usb_connected);
         } else if(!serial_connected() && usb_connected) {
