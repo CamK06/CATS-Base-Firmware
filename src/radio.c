@@ -1,4 +1,3 @@
-#include "kiss.h"
 #include "radio.h"
 #include "config.h"
 #include "settings.h"
@@ -19,6 +18,7 @@ static uint8_t buf[8193];
 static int buf_idx = 0;
 
 extern void print_packet(cats_packet_t* pkt);
+extern bool shell_enabled;
 
 int radio_init()
 {
@@ -57,8 +57,13 @@ void radio_tick()
         buf_idx = 0;
         memset(buf, 0x00, 8193);
         
-        printf("RECEIVED [%.1f dBm]:\n", rssi);
-        print_packet(pkt);
+        if(shell_enabled) {
+            printf("RECEIVED [%.1f dBm]:\n", rssi);
+            print_packet(pkt);
+        }
+        else {
+            // Send packet to pc_iface
+        }
 
         // Digipeating
         if(get_var("DIGIPEAT")->val[0] && cats_packet_should_digipeat(pkt, get_var("CALLSIGN")->val, get_var("SSID")->val[0])) {
@@ -79,14 +84,18 @@ void radio_tick()
                 hop = hop->next;
             }
             cats_route_add_past_hop(route, get_var("CALLSIGN")->val, get_var("SSID")->val[0], rssi);
-            print_packet(pkt);
+            if(shell_enabled) {
+                print_packet(pkt);
+            }
 
             uint8_t tx_buf[CATS_MAX_PKT_LEN];
             uint16_t tx_len = cats_packet_encode(pkt, tx_buf);
             if(tx_len != CATS_FAIL) {
                 mcu_sleep(rand() % 100);
                 radio_send(tx_buf, tx_len);
-                printf("DIGIPEATED\n");
+                if(shell_enabled) {
+                    printf("DIGIPEATED\n");
+                }
             }
         }
         

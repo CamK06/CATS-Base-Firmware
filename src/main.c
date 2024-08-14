@@ -1,12 +1,12 @@
 #include "config.h"
 
 #include "gps.h"
-#include "kiss.h"
 #include "shell.h"
 #include "radio.h"
 #include "error.h"
 #include "version.h"
 #include "settings.h"
+#include "pc_iface.h"
 
 #include "drivers/serial.h"
 #include "drivers/gpio.h"
@@ -22,6 +22,11 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+#define SERIAL_BUF_LEN 10000
+
+static uint8_t shell_enter_seq[] = { '+', '*', '*', '*' };
+static int shell_enter_seq_ptr = 0;
+
 extern uint16_t crc16(uint8_t* data, int len);
 
 #ifdef USE_GPS
@@ -30,6 +35,9 @@ extern uint16_t crc16(uint8_t* data, int len);
 lwgps_t hgps;
 #endif // USE_GPS
 static uint32_t last_beacon_tx;
+bool shell_enabled = false;
+uint8_t serial_buf[SERIAL_BUF_LEN];
+int serial_buf_ptr = 0;
 
 void print_packet(cats_packet_t* pkt)
 {
@@ -154,16 +162,52 @@ static void beacon_tick()
         cats_packet_add_nodeinfo(pkt, info);
         cats_packet_add_route(pkt, route);
         
-        printf("BEACONING:\n");
-        print_packet(pkt);
+        if(shell_enabled) {
+            printf("BEACONING:\n");
+            print_packet(pkt);
+        }
 
         uint16_t len = cats_packet_encode(pkt, tx_buf);
-        if(!radio_send(tx_buf, len)) {
+        if(!radio_send(tx_buf, len) && shell_enabled) {
             printf("TX FAILED\n");
         }
         cats_packet_destroy(&pkt);
 
         last_beacon_tx = mcu_millis();
+    }
+}
+
+void serial_rx_tick()
+{
+    while(serial_available()) {
+        // Read next byte in from serial
+        char c = serial_read();
+        if(serial_buf_ptr >= SERIAL_BUF_LEN - 1 && c != '\r' && c != 0x7f) { // Don't overflow; only allow return and delete if max length is reached
+            return;
+        }
+        serial_buf[serial_buf_ptr] = c;
+
+        // Call the correct handler for incoming data
+        if(shell_enabled) { // Shell handles the new character
+            shell_char_in();
+        }
+        else {
+            // Handle the shell startup sequence (+***)
+            if(c == shell_enter_seq[0]) {
+                shell_enter_seq_ptr = serial_buf_ptr;
+            }
+            if(memcmp(shell_enter_seq, serial_buf + shell_enter_seq_ptr, 4) == 0) {
+                memset(serial_buf, 0x00, SERIAL_BUF_LEN);
+                serial_buf_ptr = 0;
+                shell_init();
+                shell_enabled = true;
+                return;
+            }
+
+            // Handle new character with pc_iface
+            pc_iface_char_in();
+        }
+        serial_buf_ptr++;
     }
 }
 
@@ -210,16 +254,22 @@ int main() {
     while(1) {
         if(serial_connected() && !usb_connected) {
             usb_connected = true;
-	        shell_init();
+	        memset(serial_buf, 0x00, SERIAL_BUF_LEN);
+            serial_buf_ptr = 0;
+            if(shell_enabled) {
+                shell_init();
+            }
+            else {
+                pc_iface_init();
+            }
             gpio_write(USB_LED_PIN, usb_connected);
         } else if(!serial_connected() && usb_connected) {
-            usb_connected = true;
+            usb_connected = false;
             gpio_write(USB_LED_PIN, usb_connected);
-            //mcu_flash();
         }
         
 	    radio_tick();
-	    shell_tick();
+        serial_rx_tick();
 #ifdef USE_GPS
 	    gps_tick();
 #endif

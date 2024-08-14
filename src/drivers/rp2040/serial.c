@@ -12,7 +12,9 @@ int serial_init(int baudRate)
 
 void serial_putchar(char c)
 {
-    putchar(c);
+    //putchar(c);
+    tud_cdc_write_char(c);
+    tud_cdc_write_flush();
 }
 
 void serial_write_str(const char* text)

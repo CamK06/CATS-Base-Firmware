@@ -13,6 +13,6 @@ typedef struct shell_cmd {
 } shell_cmd_t;
 
 void shell_init();
-void shell_tick();
+void shell_char_in();
 
 #endif // CATS_FW_SHELL_H
