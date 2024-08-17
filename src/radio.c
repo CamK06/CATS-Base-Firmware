@@ -1,6 +1,7 @@
 #include "radio.h"
 #include "config.h"
 #include "settings.h"
+#include "pc_iface.h"
 
 #include "drivers/radio.h"
 #include "drivers/gpio.h"
@@ -33,7 +34,7 @@ void radio_tick()
 {
     if(radio_get_state() == RADIO_STATE_IDLE) {
         radio_start_rx();
-        return;
+        //return;
     }
     
     int po = radio_rx_step(buf);
@@ -62,7 +63,7 @@ void radio_tick()
             print_packet(pkt);
         }
         else {
-            // Send packet to pc_iface
+            pc_iface_send(pkt, rssi);
         }
 
         // Digipeating

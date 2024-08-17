@@ -24,9 +24,11 @@ void serial_write_str(const char* text)
 
 void serial_write(const char* buf, int len)
 {
-    for(int i = 0; i < len; i++) {
-        serial_putchar(buf[i]);
-    }
+    tud_cdc_write(buf, len);
+    tud_cdc_write_flush();
+    //for(int i = 0; i < len; i++) {
+    //    serial_putchar(buf[i]);
+    //}
 }
 
 char serial_read()

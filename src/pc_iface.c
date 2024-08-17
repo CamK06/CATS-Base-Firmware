@@ -27,11 +27,21 @@ static void reset_serial_buf()
     last_rx = -1;
 }
 
+void pc_iface_send(cats_packet_t* pkt, float rssi)
+{
+    uint8_t buf[CATS_MAX_PKT_LEN];
+    int len = cats_packet_semi_encode(pkt, buf);
+    if(len == CATS_FAIL) {
+        return;
+    }
+    len = cats_radio_iface_encode(buf, len, rssi);
+    serial_write(buf, len);
+}
+
 void pc_iface_char_in()
 {
     // 3 second serial RX Timeout
     if(mcu_millis() - last_rx >= 3000 && last_rx != -1) {
-        printf("RX Timeout!\n");
         reset_serial_buf();
     }
     last_rx = mcu_millis();
@@ -57,7 +67,6 @@ void pc_iface_char_in()
     if(cats_packet_semi_decode(pkt, serial_buf, serial_buf_ptr) == CATS_FAIL) { // Failed to decode packet
         cats_packet_destroy(&pkt);
         reset_serial_buf();
-        printf("Failed to semi decode the CATS packet? wtf??");
         return;
     }
     reset_serial_buf();
